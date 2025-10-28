@@ -31,6 +31,7 @@ Features:
 - Virtual scroll
 - Multi select
 - Single select
+- Filterable options with search input
 - Integrates with Angular Material Form Field
 - Custom trigger template
 - Custom option template
@@ -160,13 +161,32 @@ Custom trigger template
 <mat-form-field class="field">
   <mat-label>Custom Trigger Example</mat-label>
   <ngx-virtual-select-field multiple [(value)]="value">
-    <ngx-virtual-select-field-trigger> 
-      {{ value.length }} selected 
+    <ngx-virtual-select-field-trigger>
+      {{ value.length }} selected
     </ngx-virtual-select-field-trigger>
-    <ngx-virtual-select-field-option 
-      *ngxVirtualSelectFieldOptionFor="let option of options" 
-      [value]="option.value"> 
-      {{ option.label }} 
+    <ngx-virtual-select-field-option
+      *ngxVirtualSelectFieldOptionFor="let option of options"
+      [value]="option.value">
+      {{ option.label }}
+    </ngx-virtual-select-field-option>
+  </ngx-virtual-select-field>
+</mat-form-field>
+```
+
+Filterable select with search input
+
+```html
+<mat-form-field>
+  <mat-label>Filterable Example</mat-label>
+  <ngx-virtual-select-field
+    [value]="value"
+    [filterable]="true"
+    filterPlaceholder="Type to filter..."
+    (valueChange)="onValueChange($event)">
+    <ngx-virtual-select-field-option
+      *ngxVirtualSelectFieldOptionFor="let option of options"
+      [value]="option.value">
+      {{ option.label }}
     </ngx-virtual-select-field-option>
   </ngx-virtual-select-field>
 </mat-form-field>
@@ -191,19 +211,21 @@ See more in API section below.
 selector: `ngx-virtual-select-field`  
 Component to define select field
 
-| Input                     | Type                         | Default | Description                                                                    |
-| ------------------------- | ---------------------------- | ------- | ------------------------------------------------------------------------------ |
-| panelWidth                | `string\|number \|null`      | `auto`  | Width for overlay panel                                                        |
-| optionHeight              | `number`                     | `48`    | Height for an option element                                                   |
-| panelViewportPageSize     | `number`                     | `8`     | Amount of visible items in list                                                |
-| multiple                  | `boolean`                    | `false` | Enable multiple selection                                                      |
-| tabIndex                  | `number`                     | `0`     | Tab index for keyboard navigation                                              |
-| typeaheadDebounceInterval | `number`                     | `300`   | Milliseconds to wait before navigating to active element after keyboard search |
-| panelClass                | `string \| string[] \| null` | `null`  | CSS class to be added to the panel element                                     |
-| value                     | `TValue[] \| TValue \| null` | `null`  | Value of the select field                                                      |
-| placeholder               | `string`                     | none    | Placeholder for the select field                                               |
-| required                  | `boolean`                    | `false` | Define if fields is required                                                   |
-| disabled                  | `boolean`                    | `false` | Define if fields is disabled                                                   |
+| Input                     | Type                         | Default      | Description                                                                    |
+| ------------------------- | ---------------------------- | ------------ | ------------------------------------------------------------------------------ |
+| panelWidth                | `string\|number \|null`      | `auto`       | Width for overlay panel                                                        |
+| optionHeight              | `number`                     | `48`         | Height for an option element                                                   |
+| panelViewportPageSize     | `number`                     | `8`          | Amount of visible items in list                                                |
+| multiple                  | `boolean`                    | `false`      | Enable multiple selection                                                      |
+| tabIndex                  | `number`                     | `0`          | Tab index for keyboard navigation                                              |
+| typeaheadDebounceInterval | `number`                     | `300`        | Milliseconds to wait before navigating to active element after keyboard search |
+| panelClass                | `string \| string[] \| null` | `null`       | CSS class to be added to the panel element                                     |
+| filterable                | `boolean`                    | `false`      | Enable filtering of options with search input                                  |
+| filterPlaceholder         | `string`                     | `'Search...'`| Placeholder text for the filter input                                          |
+| value                     | `TValue[] \| TValue \| null` | `null`       | Value of the select field                                                      |
+| placeholder               | `string`                     | none         | Placeholder for the select field                                               |
+| required                  | `boolean`                    | `false`      | Define if fields is required                                                   |
+| disabled                  | `boolean`                    | `false`      | Define if fields is disabled                                                   |
 
 | Output          | Type                          | Description                |
 | --------------- | ----------------------------- | -------------------------- |
@@ -311,6 +333,10 @@ CSS variables for main component:
   --ngx-virtual-select-field-panel-background: ...;
   --ngx-virtual-select-field-panel-box-shadow: ...;
   --ngx-virtual-select-field-panel-list-wrapper-padding: ...;
+
+  --ngx-virtual-select-field-divider-color: ...;
+  --ngx-virtual-select-field-filter-input-border-color: ...;
+  --ngx-virtual-select-field-filter-input-border-color--focused: ...;
 }
 ```
 CSS variables for option component:

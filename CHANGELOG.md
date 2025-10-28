@@ -1,3 +1,7 @@
+## 1.4.0 (2025-10-28)
+
+Add filter option.
+
 ## 1.3.0 (2025-03-02)
 
 This was a version bump only, there were no code changes.

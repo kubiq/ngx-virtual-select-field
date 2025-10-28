@@ -44,7 +44,9 @@ import {
   MAT_FORM_FIELD,
   MatFormField,
   MatFormFieldControl,
+  MatFormFieldModule,
 } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { hasModifierKey } from '@angular/cdk/keycodes';
 import {
   Observable,
@@ -97,7 +99,7 @@ import {
   selector: 'ngx-virtual-select-field',
   exportAs: 'ngxVirtualSelectField',
   standalone: true,
-  imports: [CommonModule, OverlayModule, ScrollingModule],
+  imports: [CommonModule, OverlayModule, ScrollingModule, MatFormFieldModule, MatInputModule],
   templateUrl: './virtual-select-field.component.html',
   styleUrl: './virtual-select-field.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -192,6 +194,20 @@ export class NgxVirtualSelectFieldComponent<TValue>
    */
   @Input()
   panelClass: string | string[] | null = null;
+
+  /**
+   * Enable filtering of options
+   * @default false
+   */
+  @Input({ transform: booleanAttribute })
+  filterable: boolean = false;
+
+  /**
+   * Placeholder text for the filter input
+   * @default 'Search...'
+   */
+  @Input()
+  filterPlaceholder: string = 'Search...';
 
   /**
    * Value of the select field
@@ -289,6 +305,9 @@ export class NgxVirtualSelectFieldComponent<TValue>
   @ViewChild(CdkConnectedOverlay, { static: false })
   cdkConnectedOverlay!: CdkConnectedOverlay;
 
+  @ViewChild('filterInput', { static: false })
+  filterInput: ElementRef<HTMLInputElement> | undefined;
+
   @ContentChild(NgxVirtualSelectFieldOptionForDirective)
   optionFor!: NgxVirtualSelectFieldOptionForDirective<TValue>;
 
@@ -313,7 +332,9 @@ export class NgxVirtualSelectFieldComponent<TValue>
   protected readonly overlayWidth: Signal<string | number>;
 
   protected readonly isPanelOpened = signal(false);
+  protected readonly filterText = signal('');
   protected triggerValue$: Observable<string> | null = null;
+  protected filteredOptions$: Observable<NgxVirtualSelectFieldOptionModel<TValue>[]> | null = null;
   protected preferredOverlayOrigin: CdkOverlayOrigin | ElementRef | undefined;
 
   private readonly _changeDetectorRef = inject(ChangeDetectorRef);
@@ -331,6 +352,7 @@ export class NgxVirtualSelectFieldComponent<TValue>
   private _keyManager: ListKeyManager<
     NgxVirtualSelectFieldOptionModel<TValue>
   > | null = null;
+  private _filterTextSubject: Subject<string> | null = null;
 
   constructor(
     @Optional()
@@ -440,6 +462,28 @@ export class NgxVirtualSelectFieldComponent<TValue>
         ),
       );
     }
+
+    // Create filtered options observable that reacts to filter text changes
+    const filterText$ = new Subject<string>();
+
+    this.filteredOptions$ = merge(
+      this.optionFor.options$,
+      filterText$.pipe(switchMap(() => this.optionFor.options$))
+    ).pipe(
+      map((options) => {
+        const searchText = this.filterText().toLowerCase().trim();
+        if (!searchText || !this.filterable) {
+          return options;
+        }
+        return options.filter((option) => {
+          const label = option.getLabel?.() ?? option.label;
+          return label.toLowerCase().includes(searchText);
+        });
+      }),
+    );
+
+    // Trigger filter updates when filter text changes
+    this._filterTextSubject = filterText$;
 
     this.optionFor.options$
       .pipe(takeUntilDestroyed(this._destroyRef))
@@ -598,6 +642,41 @@ export class NgxVirtualSelectFieldComponent<TValue>
     this._scrolledIndexChange.next();
   }
 
+  protected onFilterInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.filterText.set(input.value);
+    this._filterTextSubject?.next(input.value);
+  }
+
+  protected onFilterKeyDown(event: KeyboardEvent): void {
+    const isArrowKey =
+      event.key === ARROW_DOWN_KEY ||
+      event.key === ARROW_UP_KEY ||
+      event.key === ARROW_LEFT_KEY ||
+      event.key === ARROW_RIGHT_KEY;
+
+    // Prevent arrow keys from propagating when there's text in the input
+    if (isArrowKey && this.filterText()) {
+      if (event.key === ARROW_DOWN_KEY || event.key === ARROW_UP_KEY) {
+        // Arrow down/up should move to the options list
+        event.preventDefault();
+        this.cdkVirtualScrollViewport.elementRef.nativeElement.focus();
+        this._keyManager?.onKeydown(event);
+      }
+      // Left/Right arrows should work normally in the input for cursor movement
+      return;
+    }
+
+    // Allow other keys like Escape, Enter to work
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.close();
+    } else if (event.key === 'Tab') {
+      // Tab should close the panel
+      this.close();
+    }
+  }
+
   protected open() {
     if (this.isPanelOpened()) {
       return;
@@ -609,10 +688,18 @@ export class NgxVirtualSelectFieldComponent<TValue>
     }
 
     this.isPanelOpened.set(true);
+
+    // Focus the filter input when panel opens if filterable is enabled
+    if (this.filterable) {
+      setTimeout(() => {
+        this.filterInput?.nativeElement.focus();
+      }, 0);
+    }
   }
 
   protected close() {
     this.isPanelOpened.set(false);
+    this.filterText.set(''); // Clear filter when closing
     this._onTouched();
     this._stateChanges.next();
   }

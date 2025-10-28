@@ -18,6 +18,27 @@
 
 <div class="field-container">
   <mat-form-field class="field">
+    <mat-label>Filterable Virtual Select Example</mat-label>
+    <ngx-virtual-select-field
+      [filterable]="true"
+      filterPlaceholder="Type to filter..."
+      [value]="singleValueWithSelected"
+      (valueChange)="singleValueWithSelected = $event"
+    >
+      <ngx-virtual-select-field-option
+        *ngxVirtualSelectFieldOptionFor="let option of options"
+        [value]="option.value"
+        [disabled]="option.disabled"
+      >
+        {{ option.label }}</ngx-virtual-select-field-option
+      >
+    </ngx-virtual-select-field>
+  </mat-form-field>
+  {{ singleValueWithSelected }}
+</div>
+
+<div class="field-container">
+  <mat-form-field class="field">
     <mat-label>Virtual Example</mat-label>
     <ngx-virtual-select-field
       [value]="singleValueWithSelected"
@@ -59,6 +80,8 @@
   <mat-form-field class="field">
     <mat-label>Multiselect Virtual Example</mat-label>
     <ngx-virtual-select-field
+      [filterable]="true"
+      filterPlaceholder="Type to filter..."
       multiple
       [value]="multiselectValue"
       (valueChange)="multiselectValue = $event"

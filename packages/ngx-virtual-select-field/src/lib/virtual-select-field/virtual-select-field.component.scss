@@ -128,16 +128,33 @@ $name-prefix: 'ngx-virtual-select-field';
 .#{$name-prefix} {
   &-panel {
     width: 100%;
-    height: calc(
-      var(--#{$name-prefix}__viewport-option-height) * var(--#{$name-prefix}__viewport-page-size) +
-        var(--#{$name-prefix}-panel-list-wrapper-padding) * 2
-    );
     background: var(--#{$name-prefix}-panel-background);
     box-shadow: var(--#{$name-prefix}-panel-box-shadow);
+    display: flex;
+    flex-direction: column;
 
     @include cdk.high-contrast(active, off) {
       outline: solid 1px;
     }
+  }
+
+  &-filter-wrapper {
+    padding: 8px 8px;
+    border-bottom: 1px solid var(--#{$name-prefix}-divider-color, rgba(0, 0, 0, 0.12));
+    background: var(--#{$name-prefix}-panel-background);
+  }
+
+  &-filter-field {
+    width: 100%;
+    display: block;
+  }
+
+  &-viewport {
+    width: 100%;
+    height: calc(
+      var(--#{$name-prefix}__viewport-option-height) * var(--#{$name-prefix}__viewport-page-size) +
+        var(--#{$name-prefix}-panel-list-wrapper-padding) * 2
+    );
   }
 
   &-list-wrapper {

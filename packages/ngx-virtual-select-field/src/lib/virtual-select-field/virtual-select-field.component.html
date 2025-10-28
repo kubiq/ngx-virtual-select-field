@@ -58,30 +58,46 @@
     [@transformPanel]="'showing'"
     (@transformPanel.done)="_panelDoneAnimatingStream.next($event.toState)"
     -->
-  <cdk-virtual-scroll-viewport
-    role="listbox"
-    tabindex="-1"
-    class="ngx-virtual-select-field-panel {{ inheritedColorTheme }}"
-    [style.--ngx-virtual-select-field__viewport-page-size]="maxPageSize"
-    [style.--ngx-virtual-select-field__viewport-option-height.px]="optionHeight"
-    [itemSize]="optionHeight"
-    [ngClass]="panelClass"
-    (scrolledIndexChange)="onScrolledIndexChange()"
-    (keydown)="onKeyDown($event)"
-  >
-    <div class="ngx-virtual-select-field-list-wrapper">
-      <ng-container
-        *cdkVirtualFor="
-          let option of optionFor.options$ | async;
-          trackBy: optionTrackBy
-        "
-      >
+  <div class="ngx-virtual-select-field-panel {{ inheritedColorTheme }}" [ngClass]="panelClass">
+    @if (filterable) {
+      <div class="ngx-virtual-select-field-filter-wrapper">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="ngx-virtual-select-field-filter-field">
+          <input
+            matInput
+            #filterInput
+            type="text"
+            [placeholder]="filterPlaceholder"
+            [value]="filterText()"
+            (input)="onFilterInput($event)"
+            (keydown)="onFilterKeyDown($event)"
+          />
+        </mat-form-field>
+      </div>
+    }
+    <cdk-virtual-scroll-viewport
+      role="listbox"
+      tabindex="-1"
+      class="ngx-virtual-select-field-viewport"
+      [style.--ngx-virtual-select-field__viewport-page-size]="maxPageSize"
+      [style.--ngx-virtual-select-field__viewport-option-height.px]="optionHeight"
+      [itemSize]="optionHeight"
+      (scrolledIndexChange)="onScrolledIndexChange()"
+      (keydown)="onKeyDown($event)"
+    >
+      <div class="ngx-virtual-select-field-list-wrapper">
         <ng-container
-          [ngTemplateOutlet]="optionFor.template"
-          [ngTemplateOutletContext]="{ $implicit: option }"
+          *cdkVirtualFor="
+            let option of filteredOptions$ | async;
+            trackBy: optionTrackBy
+          "
         >
+          <ng-container
+            [ngTemplateOutlet]="optionFor.template"
+            [ngTemplateOutletContext]="{ $implicit: option }"
+          >
+          </ng-container>
         </ng-container>
-      </ng-container>
-    </div>
-  </cdk-virtual-scroll-viewport>
+      </div>
+    </cdk-virtual-scroll-viewport>
+  </div>
 </ng-template>
