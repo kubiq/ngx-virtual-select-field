@@ -748,9 +748,9 @@ export class NgxVirtualSelectFieldComponent<TValue>
   private doPanelOpenedKeydown(event: KeyboardEvent) {
     this.assertIsDefined(this.optionsQuery, `optionsQuery is not defined`);
 
-    const keyManager = this._keyManager!;
-    const activeItem = keyManager.activeItem;
-    const isTyping = keyManager.isTyping();
+    const keyManager = this._keyManager;
+    const activeItem = keyManager?.activeItem;
+    const isTyping = keyManager?.isTyping();
     const options = this.optionFor.options$.value;
     const isArrowKey =
       event.key === ARROW_DOWN_KEY || event.key === ARROW_UP_KEY;
@@ -784,16 +784,16 @@ export class NgxVirtualSelectFieldComponent<TValue>
 
       this.emitValue();
     } else {
-      const previouslyFocusedIndex = keyManager.activeItemIndex;
+      const previouslyFocusedIndex = keyManager?.activeItemIndex;
 
-      keyManager.onKeydown(event);
+      keyManager?.onKeydown(event);
 
       if (
         this.multiple &&
         isArrowKey &&
         event.shiftKey &&
-        keyManager.activeItem &&
-        keyManager.activeItemIndex !== previouslyFocusedIndex
+        keyManager?.activeItem &&
+        keyManager?.activeItemIndex !== previouslyFocusedIndex
       ) {
         this.selectOptionByValue(options, keyManager.activeItem.value);
       }
@@ -816,8 +816,8 @@ export class NgxVirtualSelectFieldComponent<TValue>
   }
 
   private doPanelClosedKeydown(event: KeyboardEvent): void {
-    const keyManager = this._keyManager!;
-    const isTyping = keyManager.isTyping();
+    const keyManager = this._keyManager;
+    const isTyping = keyManager?.isTyping();
 
     const isArrowKey =
       event.key === ARROW_DOWN_KEY ||
@@ -834,20 +834,22 @@ export class NgxVirtualSelectFieldComponent<TValue>
       event.preventDefault(); // prevents the page from scrolling down when pressing space
       this.open();
     } else if (!this.multiple) {
-      const previouslySelectedOptionIndex = keyManager.activeItemIndex;
+      const previouslySelectedOptionIndex = keyManager?.activeItemIndex;
 
-      keyManager.onKeydown(event);
-      const selectedOptionIndex = keyManager.activeItemIndex;
+      keyManager?.onKeydown(event);
+      const selectedOptionIndex = keyManager?.activeItemIndex;
 
       if (
         selectedOptionIndex &&
         previouslySelectedOptionIndex !== selectedOptionIndex
       ) {
         //TODO: arrow navigation should start from selected options. Currently it starts from the first option
-        this.selectOptionByValue(
-          this.optionFor.options$.value,
-          keyManager.activeItem!.value,
-        );
+        if (keyManager.activeItem) {
+          this.selectOptionByValue(
+            this.optionFor.options$.value,
+            keyManager.activeItem.value,
+          );
+        }
 
         // TODO: Add live announcer
         // We set a duration on the live announcement, because we want the live element to be
