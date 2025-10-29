@@ -508,7 +508,7 @@ export class NgxVirtualSelectFieldComponent<TValue>
         ),
       );
 
-    merge(this._scrolledIndexChange, this._selectionModel.changed)
+    merge(this._scrolledIndexChange, this._selectionModel.changed, this.filteredOptions$)
       .pipe(takeUntilDestroyed(this._destroyRef), debounceTime(20))
       .subscribe(() =>
         this.updateRenderedOptionsState(this.optionFor.options$.value),

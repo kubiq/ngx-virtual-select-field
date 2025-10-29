@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import {
   NgxVirtualSelectFieldBundle,
   NgxVirtualSelectFieldOptionModel,
@@ -10,7 +9,7 @@ import {
 @Component({
   selector: 'app-customized-virtual-select',
   standalone: true,
-  imports: [CommonModule, NgxVirtualSelectFieldBundle, MatFormFieldModule],
+  imports: [CommonModule, NgxVirtualSelectFieldBundle],
   providers: [
     {
       provide: NGX_VIRTUAL_SELECT_FIELD_CONFIG,
