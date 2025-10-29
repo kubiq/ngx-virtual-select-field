@@ -106,6 +106,32 @@ $name-prefix: 'ngx-virtual-select-field';
   }
 }
 
+.#{$name-prefix}-clear {
+  position: absolute;
+  transform: translateY(-8px);
+  right: 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px;
+  margin-right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--#{$name-prefix}-trigger-text-color);
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  svg {
+    fill: currentColor;
+  }
+}
+
 .#{$name-prefix}-arrow-wrapper {
   height: 24px;
   flex-shrink: 0;
@@ -147,6 +173,28 @@ $name-prefix: 'ngx-virtual-select-field';
   &-filter-field {
     width: 100%;
     display: block;
+  }
+
+  &-filter-clear {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 4px;
+    padding-right: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--#{$name-prefix}-trigger-text-color);
+    opacity: 0.6;
+    transition: opacity 0.2s;
+
+    &:hover {
+      opacity: 1;
+    }
+
+    svg {
+      fill: currentColor;
+    }
   }
 
   &-viewport {

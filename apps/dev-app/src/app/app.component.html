@@ -22,6 +22,7 @@
     <ngx-virtual-select-field
       [filterable]="true"
       filterPlaceholder="Type to filter..."
+      filterClearable
       [value]="singleValueWithSelected"
       (valueChange)="singleValueWithSelected = $event"
     >
@@ -80,7 +81,9 @@
   <mat-form-field class="field">
     <mat-label>Multiselect Virtual Example</mat-label>
     <ngx-virtual-select-field
-      [filterable]="true"
+      clearable
+      filterable
+      filterClearable
       filterPlaceholder="Type to filter..."
       multiple
       [value]="multiselectValue"

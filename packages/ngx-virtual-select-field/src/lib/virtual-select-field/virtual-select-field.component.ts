@@ -20,6 +20,7 @@ import {
   ViewChild,
   booleanAttribute,
   computed,
+  effect,
   inject,
   numberAttribute,
   output,
@@ -210,6 +211,20 @@ export class NgxVirtualSelectFieldComponent<TValue>
   filterPlaceholder: string = 'Search...';
 
   /**
+   * Show clear button in filter input
+   * @default true
+   */
+  @Input({ transform: booleanAttribute })
+  filterClearable: boolean = true;
+
+  /**
+   * Show clear button in select trigger
+   * @default false
+   */
+  @Input({ transform: booleanAttribute })
+  clearable: boolean = false;
+
+  /**
    * Value of the select field
    * @default null
    */
@@ -333,8 +348,22 @@ export class NgxVirtualSelectFieldComponent<TValue>
 
   protected readonly isPanelOpened = signal(false);
   protected readonly filterText = signal('');
+  protected readonly options = signal<NgxVirtualSelectFieldOptionModel<TValue>[]>([]);
+  protected readonly filteredOptions = computed(() => {
+    const searchText = this.filterText().toLowerCase().trim();
+    const allOptions = this.options();
+
+    if (!searchText || !this.filterable) {
+      return allOptions;
+    }
+
+    return allOptions.filter((option) => {
+      const label = option.getLabel?.() ?? option.label;
+      return label.toLowerCase().includes(searchText);
+    });
+  });
+
   protected triggerValue$: Observable<string> | null = null;
-  protected filteredOptions$: Observable<NgxVirtualSelectFieldOptionModel<TValue>[]> | null = null;
   protected preferredOverlayOrigin: CdkOverlayOrigin | ElementRef | undefined;
 
   private readonly _changeDetectorRef = inject(ChangeDetectorRef);
@@ -352,7 +381,6 @@ export class NgxVirtualSelectFieldComponent<TValue>
   private _keyManager: ListKeyManager<
     NgxVirtualSelectFieldOptionModel<TValue>
   > | null = null;
-  private _filterTextSubject: Subject<string> | null = null;
 
   constructor(
     @Optional()
@@ -372,6 +400,13 @@ export class NgxVirtualSelectFieldComponent<TValue>
     this.inheritedColorTheme = this._parentFormField
       ? `mat-${this._parentFormField.color}`
       : '';
+
+    effect(() => {
+      const filtered = this.filteredOptions();
+      if (this._keyManager) {
+        this.initListKeyManager(filtered);
+      }
+    });
   }
 
   private createOverlayWidthSignal() {
@@ -463,35 +498,14 @@ export class NgxVirtualSelectFieldComponent<TValue>
       );
     }
 
-    // Create filtered options observable that reacts to filter text changes
-    const filterText$ = new Subject<string>();
-
-    this.filteredOptions$ = merge(
-      this.optionFor.options$,
-      filterText$.pipe(switchMap(() => this.optionFor.options$))
-    ).pipe(
-      map((options) => {
-        const searchText = this.filterText().toLowerCase().trim();
-        if (!searchText || !this.filterable) {
-          return options;
-        }
-        return options.filter((option) => {
-          const label = option.getLabel?.() ?? option.label;
-          return label.toLowerCase().includes(searchText);
-        });
-      }),
-    );
-
-    // Trigger filter updates when filter text changes
-    this._filterTextSubject = filterText$;
-
+    // Subscribe to options$ and update the options signal
     this.optionFor.options$
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe((options) => {
+        this.options.set(options);
         this._selectionModel?.setSelection(
           ...this._value.map((v) => options.find((o) => o.value === v)!),
         );
-        this.initListKeyManager(options);
       });
 
     this.optionsQuery.changes
@@ -504,14 +518,14 @@ export class NgxVirtualSelectFieldComponent<TValue>
       .subscribe((selectionEvent) =>
         this.updateOptionSelection(
           selectionEvent,
-          this.optionFor.options$.value,
+          this.options(),
         ),
       );
 
-    merge(this._scrolledIndexChange, this._selectionModel.changed, this._filterTextSubject)
+    merge(this._scrolledIndexChange, this._selectionModel.changed)
       .pipe(takeUntilDestroyed(this._destroyRef), debounceTime(20))
       .subscribe(() =>
-        this.updateRenderedOptionsState(this.optionFor.options$.value),
+        this.updateRenderedOptionsState(this.options()),
       );
   }
 
@@ -645,7 +659,20 @@ export class NgxVirtualSelectFieldComponent<TValue>
   protected onFilterInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.filterText.set(input.value);
-    this._filterTextSubject?.next(input.value);
+  }
+
+  protected onFilterClear(): void {
+    this.filterText.set('');
+    // Re-focus the filter input after clearing
+    setTimeout(() => {
+      this.filterInput?.nativeElement.focus();
+    }, 0);
+  }
+
+  protected onClear(event: Event): void {
+    event.stopPropagation(); // Prevent opening the panel
+    this._selectionModel.clear();
+    this.emitValue();
   }
 
   protected onFilterKeyDown(event: KeyboardEvent): void {
