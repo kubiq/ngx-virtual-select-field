@@ -32,6 +32,7 @@ Features:
 - Multi select
 - Single select
 - Filterable options with search input
+- Clear buttons for filter and selection
 - Integrates with Angular Material Form Field
 - Custom trigger template
 - Custom option template
@@ -192,6 +193,25 @@ Filterable select with search input
 </mat-form-field>
 ```
 
+Clearable select with clear button
+
+```html
+<mat-form-field>
+  <mat-label>Clearable Example</mat-label>
+  <ngx-virtual-select-field
+    [value]="value"
+    [clearable]="true"
+    multiple
+    (valueChange)="onValueChange($event)">
+    <ngx-virtual-select-field-option
+      *ngxVirtualSelectFieldOptionFor="let option of options"
+      [value]="option.value">
+      {{ option.label }}
+    </ngx-virtual-select-field-option>
+  </ngx-virtual-select-field>
+</mat-form-field>
+```
+
 ## Customization
 
 Components supports custom templates for trigger and option elements. You can use `ngx-virtual-select-field-trigger` and `ngx-virtual-select-field-option` components to define custom templates.
@@ -222,6 +242,8 @@ Component to define select field
 | panelClass                | `string \| string[] \| null` | `null`       | CSS class to be added to the panel element                                     |
 | filterable                | `boolean`                    | `false`      | Enable filtering of options with search input                                  |
 | filterPlaceholder         | `string`                     | `'Search...'`| Placeholder text for the filter input                                          |
+| filterClearable           | `boolean`                    | `true`       | Show clear button in filter input                                              |
+| clearable                 | `boolean`                    | `false`      | Show clear button in select trigger to clear all selections                    |
 | value                     | `TValue[] \| TValue \| null` | `null`       | Value of the select field                                                      |
 | placeholder               | `string`                     | none         | Placeholder for the select field                                               |
 | required                  | `boolean`                    | `false`      | Define if fields is required                                                   |

@@ -606,6 +606,13 @@ export class NgxVirtualSelectFieldComponent<TValue>
   }
 
   onOverlayAttached() {
+    // Focus the filter input when overlay is attached
+    if (this.filterable) {
+      setTimeout(() => {
+        this.filterInput?.nativeElement.focus();
+      }, 0);
+    }
+
     this.cdkConnectedOverlay.positionChange
       .pipe(
         take(1),
@@ -715,13 +722,6 @@ export class NgxVirtualSelectFieldComponent<TValue>
     }
 
     this.isPanelOpened.set(true);
-
-    // Focus the filter input when panel opens if filterable is enabled
-    if (this.filterable) {
-      setTimeout(() => {
-        this.filterInput?.nativeElement.focus();
-      }, 0);
-    }
   }
 
   protected close() {
