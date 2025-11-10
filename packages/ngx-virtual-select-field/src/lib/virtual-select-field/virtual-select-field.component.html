@@ -77,8 +77,17 @@
     (@transformPanel.done)="_panelDoneAnimatingStream.next($event.toState)"
     -->
   <div class="ngx-virtual-select-field-panel {{ inheritedColorTheme }}" [ngClass]="panelClass">
-    @if (filterable) {
+    @if (filterable && hasOptionsToFilter()) {
       <div class="ngx-virtual-select-field-filter-wrapper">
+        @if (multiple) {
+          <div class="ngx-virtual-select-field-select-all">
+            <mat-pseudo-checkbox
+              [state]="isAllSelected() ? 'checked' : (isIndeterminate() ? 'indeterminate' : 'unchecked')"
+              (click)="onSelectAllChange(); $event.stopPropagation()"
+              aria-label="Select all options"
+            ></mat-pseudo-checkbox>
+          </div>
+        }
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="ngx-virtual-select-field-filter-field">
           <input
             matInput
@@ -110,7 +119,17 @@
         </mat-form-field>
       </div>
     }
-    <cdk-virtual-scroll-viewport
+    @if (loading) {
+      <div class="ngx-virtual-select-field-loading">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+    } @else if (hasNoFilteredResults()) {
+      <div class="ngx-virtual-select-field-no-results">
+        No results found. Try adjusting your filter.
+      </div>
+    }
+    @if (!loading) {
+      <cdk-virtual-scroll-viewport
       role="listbox"
       tabindex="-1"
       class="ngx-virtual-select-field-viewport"
@@ -135,5 +154,6 @@
         </ng-container>
       </div>
     </cdk-virtual-scroll-viewport>
+    }
   </div>
 </ng-template>

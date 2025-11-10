@@ -43,6 +43,7 @@ $name-prefix: 'ngx-virtual-select-field';
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
+  min-width: 0;
 }
 
 .#{$name-prefix}-placeholder {
@@ -165,14 +166,39 @@ $name-prefix: 'ngx-virtual-select-field';
   }
 
   &-filter-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
     padding: 8px 8px;
     border-bottom: 1px solid var(--#{$name-prefix}-divider-color, rgba(0, 0, 0, 0.12));
     background: var(--#{$name-prefix}-panel-background);
   }
 
+  &-select-all {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding-top: 16px;
+    padding-left: 8px;
+
+    mat-pseudo-checkbox {
+      margin: 0;
+    }
+
+    &:hover mat-pseudo-checkbox {
+      opacity: 0.8;
+    }
+  }
+
   &-filter-field {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     display: block;
+
+    ::ng-deep .mat-mdc-text-field-wrapper {
+      width: 100%;
+    }
   }
 
   &-filter-clear {
@@ -210,6 +236,21 @@ $name-prefix: 'ngx-virtual-select-field';
     flex-direction: column;
     padding-top: var(--#{$name-prefix}-panel-list-wrapper-padding);
     padding-bottom: var(--#{$name-prefix}-panel-list-wrapper-padding);
+  }
+
+  &-no-results {
+    padding: 16px;
+    text-align: center;
+    color: var(--#{$name-prefix}-no-results-text-color, currentColor);
+    font-size: 14px;
+    opacity: 0.6;
+  }
+
+  &-loading {
+    padding: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 }
 

@@ -4,7 +4,7 @@ import {
   NgxVirtualSelectFieldBundle,
   NgxVirtualSelectFieldOptionModel,
   NGX_VIRTUAL_SELECT_FIELD_CONFIG,
-} from 'ngx-virtual-select-field';
+} from 'ngx-virtual-select-field-filterable';
 import { MatFormFieldModule } from '@angular/material/form-field';
 
 @Component({

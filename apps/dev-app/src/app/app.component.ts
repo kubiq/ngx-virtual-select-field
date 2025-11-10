@@ -5,7 +5,7 @@ import { JsonPipe } from '@angular/common';
 import {
   NgxVirtualSelectFieldBundle,
   NgxVirtualSelectFieldOptionModel,
-} from 'ngx-virtual-select-field';
+} from 'ngx-virtual-select-field-filterable';
 import {
   FormBuilder,
   FormGroup,
@@ -40,6 +40,9 @@ export class AppComponent {
 
   materialSingleSelect: number | null = null;
   materialMultiSingleSelect: number[] | null = null;
+
+  loadingValue: number | null = null;
+  isLoading = true;
 
   options: NgxVirtualSelectFieldOptionModel<number>[] = new Array(100000)
     .fill(null)

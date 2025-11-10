@@ -98,7 +98,27 @@
       >
     </ngx-virtual-select-field>
   </mat-form-field>
-  {{ multiselectValue | json }}
+</div>
+<div>{{ multiselectValue | json }}</div>
+
+<div class="field-container">
+  <mat-form-field class="field">
+    <mat-label>Loading Example</mat-label>
+    <ngx-virtual-select-field
+      [loading]="isLoading"
+      [value]="loadingValue"
+      (valueChange)="loadingValue = $event"
+    >
+      <ngx-virtual-select-field-option
+        *ngxVirtualSelectFieldOptionFor="let option of options"
+        [value]="option.value"
+        [disabled]="option.disabled"
+      >
+        {{ option.label }}</ngx-virtual-select-field-option
+      >
+    </ngx-virtual-select-field>
+  </mat-form-field>
+  {{ loadingValue }}
 </div>
 
 <div class="field-container">

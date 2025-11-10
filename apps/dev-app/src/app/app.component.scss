@@ -6,9 +6,19 @@
 .field-container {
   display: flex;
   flex-direction: row;
+  gap: 16px;
 
   .field {
     width: 50%;
+    min-width: 300px;
+  }
+
+  // Style for the output text next to the field
+  > :not(.field) {
+    flex: 1;
+    word-break: break-all;
+    overflow-wrap: break-word;
+    min-width: 0;
   }
 }
 
