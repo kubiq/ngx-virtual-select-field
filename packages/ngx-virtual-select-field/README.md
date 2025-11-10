@@ -33,6 +33,7 @@ Features:
 - Single select
 - Filterable options with search input
 - Clear buttons for filter and selection
+- Loading spinner for async data
 - Integrates with Angular Material Form Field
 - Custom trigger template
 - Custom option template
@@ -54,13 +55,13 @@ Not Supported Features for now:
 1. Install package
 
    ```bash
-   npm install ngx-virtual-select-field
+   npm install ngx-virtual-select-field-filterable
    ```
 
 1. Import bundle into your component
 
    ```typescript
-   import { NgxVirtualSelectFieldBundle } from 'ngx-virtual-select-field';
+   import { NgxVirtualSelectFieldBundle } from 'ngx-virtual-select-field-filterable';
    ...
    @Component({
      imports: [
@@ -106,7 +107,7 @@ Not Supported Features for now:
 
 1. Include theme styles. You can define your own theme with help of [CSS variables](#css-variables) or inherit from material theme.
     ```scss
-    @use 'ngx-virtual-select-field/theme' as theme;
+    @use 'ngx-virtual-select-field-filterable/theme' as theme;
 
     @include theme.inherit-material-theme(); // this will inherit css variables from material theme
     ```
@@ -244,6 +245,7 @@ Component to define select field
 | filterPlaceholder         | `string`                     | `'Search...'`| Placeholder text for the filter input                                          |
 | filterClearable           | `boolean`                    | `true`       | Show clear button in filter input                                              |
 | clearable                 | `boolean`                    | `false`      | Show clear button in select trigger to clear all selections                    |
+| loading                   | `boolean`                    | `false`      | Show loading spinner while data is being loaded                                |
 | value                     | `TValue[] \| TValue \| null` | `null`       | Value of the select field                                                      |
 | placeholder               | `string`                     | none         | Placeholder for the select field                                               |
 | required                  | `boolean`                    | `false`      | Define if fields is required                                                   |

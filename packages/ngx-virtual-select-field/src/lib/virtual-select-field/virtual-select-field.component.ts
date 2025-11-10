@@ -48,6 +48,7 @@ import {
   MatFormFieldModule,
 } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { hasModifierKey } from '@angular/cdk/keycodes';
 import {
   Observable,
@@ -93,6 +94,7 @@ import {
   KEY_A_CODE,
   SPACE_CODE,
 } from './keycodes';
+import { MatPseudoCheckboxModule } from '@angular/material/core';
 
 //#endregion imports
 
@@ -100,7 +102,15 @@ import {
   selector: 'ngx-virtual-select-field',
   exportAs: 'ngxVirtualSelectField',
   standalone: true,
-  imports: [CommonModule, OverlayModule, ScrollingModule, MatFormFieldModule, MatInputModule],
+  imports: [
+    CommonModule,
+    OverlayModule,
+    ScrollingModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatPseudoCheckboxModule,
+  ],
   templateUrl: './virtual-select-field.component.html',
   styleUrl: './virtual-select-field.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -223,6 +233,13 @@ export class NgxVirtualSelectFieldComponent<TValue>
    */
   @Input({ transform: booleanAttribute })
   clearable: boolean = false;
+
+  /**
+   * Show loading spinner
+   * @default false
+   */
+  @Input({ transform: booleanAttribute })
+  loading: boolean = false;
 
   /**
    * Value of the select field
@@ -348,7 +365,9 @@ export class NgxVirtualSelectFieldComponent<TValue>
 
   protected readonly isPanelOpened = signal(false);
   protected readonly filterText = signal('');
-  protected readonly options = signal<NgxVirtualSelectFieldOptionModel<TValue>[]>([]);
+  protected readonly options = signal<
+    NgxVirtualSelectFieldOptionModel<TValue>[]
+  >([]);
   protected readonly filteredOptions = computed(() => {
     const searchText = this.filterText().toLowerCase().trim();
     const allOptions = this.options();
@@ -361,6 +380,15 @@ export class NgxVirtualSelectFieldComponent<TValue>
       const label = option.getLabel?.() ?? option.label;
       return label.toLowerCase().includes(searchText);
     });
+  });
+
+  protected readonly hasOptionsToFilter = computed(
+    () => this.options().length > 1,
+  );
+  protected readonly hasNoFilteredResults = computed(() => {
+    const filtered = this.filteredOptions();
+    const hasFilter = this.filterText().trim().length > 0;
+    return hasFilter && filtered.length === 0 && this.options().length > 0;
   });
 
   protected triggerValue$: Observable<string> | null = null;
@@ -516,17 +544,12 @@ export class NgxVirtualSelectFieldComponent<TValue>
         takeUntilDestroyed(this._destroyRef),
       )
       .subscribe((selectionEvent) =>
-        this.updateOptionSelection(
-          selectionEvent,
-          this.options(),
-        ),
+        this.updateOptionSelection(selectionEvent, this.options()),
       );
 
     merge(this._scrolledIndexChange, this._selectionModel.changed)
       .pipe(takeUntilDestroyed(this._destroyRef), debounceTime(20))
-      .subscribe(() =>
-        this.updateRenderedOptionsState(this.options()),
-      );
+      .subscribe(() => this.updateRenderedOptionsState(this.options()));
   }
 
   private updateOptionSelection(
@@ -607,10 +630,10 @@ export class NgxVirtualSelectFieldComponent<TValue>
 
   onOverlayAttached() {
     // Focus the filter input when overlay is attached
-    if (this.filterable) {
+    if (this.filterable && this.hasOptionsToFilter()) {
       setTimeout(() => {
         this.filterInput?.nativeElement.focus();
-      }, 0);
+      }, 100);
     }
 
     this.cdkConnectedOverlay.positionChange
@@ -679,6 +702,34 @@ export class NgxVirtualSelectFieldComponent<TValue>
   protected onClear(event: Event): void {
     event.stopPropagation(); // Prevent opening the panel
     this._selectionModel.clear();
+    this.emitValue();
+  }
+
+  protected isAllSelected(): boolean {
+    if (!this._selectionModel) {
+      return false;
+    }
+
+    const enabledOptions = this.options().filter((option) => !option.disabled);
+    return (
+      enabledOptions.length > 0 &&
+      enabledOptions.length === this._selectionModel.selected.length
+    );
+  }
+
+  protected isIndeterminate(): boolean {
+    if (!this._selectionModel) {
+      return false;
+    }
+
+    const selectedCount = this._selectionModel.selected.length;
+    const enabledOptions = this.options().filter((option) => !option.disabled);
+
+    return selectedCount > 0 && selectedCount < enabledOptions.length;
+  }
+
+  protected onSelectAllChange(): void {
+    this.toggleAllOptions(this.options());
     this.emitValue();
   }
 
