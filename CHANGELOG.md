@@ -1,3 +1,16 @@
+## 1.4.7 (2025-10-30)
+
+
+### 🚀 Features
+
+- **virtual-select:** add loading spinner with `loading` input property to show progress indicator
+- **virtual-select:** add `clearable` input to show clear button in select trigger
+- **virtual-select:** add `filterClearable` input to show clear button in filter input
+- **virtual-select:** auto-focus filter input when dropdown opens
+- **virtual-select:** show filter input only when there are multiple options to filter
+- **virtual-select:** display "no results found" message when filter eliminates all items
+- **virtual-select:** refactor filtering system to use Angular signals for better reactivity
+
 ## 1.4.0 (2025-10-28)
 
 Add filter option.
