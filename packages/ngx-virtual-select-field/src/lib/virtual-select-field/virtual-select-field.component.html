@@ -5,7 +5,10 @@
   #fallbackOverlayOrigin="cdkOverlayOrigin"
   #trigger
 >
-  <div class="ngx-virtual-select-field-value">
+  <div
+    class="ngx-virtual-select-field-value"
+    [class.ngx-virtual-select-field-value--clearable]="clearable && !empty && !disabled"
+  >
     @if (empty) {
       <span class="ngx-virtual-select-field-placeholder">{{
         placeholder
@@ -79,7 +82,7 @@
   <div class="ngx-virtual-select-field-panel {{ inheritedColorTheme }}" [ngClass]="panelClass">
     @if (filterable && hasOptionsToFilter()) {
       <div class="ngx-virtual-select-field-filter-wrapper">
-        @if (multiple) {
+        @if (multiple && showSelectAll) {
           <div class="ngx-virtual-select-field-select-all">
             <mat-pseudo-checkbox
               [state]="isAllSelected() ? 'checked' : (isIndeterminate() ? 'indeterminate' : 'unchecked')"

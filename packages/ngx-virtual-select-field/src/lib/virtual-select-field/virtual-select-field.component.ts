@@ -242,6 +242,13 @@ export class NgxVirtualSelectFieldComponent<TValue>
   loading: boolean = false;
 
   /**
+   * Show select all checkbox when multiple selection is enabled and filterable is true
+   * @default true
+   */
+  @Input({ transform: booleanAttribute })
+  showSelectAll: boolean = this._defaultOptions?.showSelectAll ?? true;
+
+  /**
    * Value of the select field
    * @default null
    */
