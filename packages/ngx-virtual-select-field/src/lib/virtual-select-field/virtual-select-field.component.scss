@@ -44,6 +44,13 @@ $name-prefix: 'ngx-virtual-select-field';
   white-space: nowrap;
   width: 100%;
   min-width: 0;
+  padding-right: 0;
+
+  // Reserve space for clear button when clearable is enabled
+  // The clear button is shown when not empty and not disabled
+  &.#{$name-prefix}-value--clearable {
+    padding-right: 50px; // Space for clear button (26px) + arrow (24px)
+  }
 }
 
 .#{$name-prefix}-placeholder {
