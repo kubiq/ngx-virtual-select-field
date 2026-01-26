@@ -874,6 +874,11 @@ export class NgxVirtualSelectFieldComponent<TValue>
   }
 
   private doPanelClosedKeydown(event: KeyboardEvent): void {
+    // Ensure key manager is initialized for keyboard navigation when panel is closed
+    if (!this._keyManager) {
+      this.initListKeyManager(this.filteredOptions());
+    }
+
     const keyManager = this._keyManager;
     const isTyping = keyManager?.isTyping();
 
@@ -957,6 +962,17 @@ export class NgxVirtualSelectFieldComponent<TValue>
         index,
       );
     });
+
+    // Sync key manager with current selection (for arrow key navigation when panel is closed)
+    if (!this._selectionModel.isEmpty()) {
+      const selectedOption = this._selectionModel.selected[0];
+      const selectedIndex = options.findIndex(
+        (o) => o.value === selectedOption?.value,
+      );
+      if (selectedIndex >= 0) {
+        this._keyManager.setActiveItem(selectedIndex);
+      }
+    }
   }
 
   private normalizeKeyManagerOptions(
