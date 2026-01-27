@@ -1,6 +1,6 @@
-<span><a href="https://www.npmjs.com/package/ngx-virtual-select-field" title="View this project on NPM">![NPM Version](https://img.shields.io/npm/v/ngx-virtual-select-field?style=flat&logo=npm)
+<span><a href="https://www.npmjs.com/package/ngx-virtual-select-field-filterable" title="View this project on NPM">![NPM Version](https://img.shields.io/npm/v/ngx-virtual-select-field-filterable?style=flat&logo=npm)
 </a></span>
-<span><a href="https://github.com/Vizer/ngx-virtual-select-field/actions/workflows/node.js.yml" title="View this project workflow">![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/vizer/ngx-virtual-select-field/node.js.yml?style=flat&logo=github&label=workflow)
+<span><a href="https://github.com/kubiq/ngx-virtual-select-field/actions/workflows/test.yml" title="View this project workflow">![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/kubiq/ngx-virtual-select-field/test.yml?style=flat&logo=github&label=tests)
 </a></span>
 
 # Virtual Select component for Angular Material Form Field
@@ -10,6 +10,7 @@
 - [Description](#description)
 - [Getting started](#getting-started)
 - [Examples](#examples)
+- [Keyboard Shortcuts](#keyboard-shortcuts)
 - [Customization](#customization)
 - [API](#api)
   - [NgxVirtualSelectFieldComponent<TValue>](#ngxvirtualselectfieldcomponenttvalue)
@@ -24,28 +25,31 @@
 
 ## Description
 
-This package replicates the Angular Material Select component with virtual scroll capabilities with help of cdk-virtual-scroll. It provides most major features of the original Angular Material Select component. The goal of this package is to provide similar api and features as the original Angular Material Select component but with virtual scroll capabilities. One major difference is that this package does not support option groups at the moment. Also, this requires own structural directive to be used for options in order to provide virtual scroll capabilities and custom template.
+This package replicates the Angular Material Select component with virtual scroll capabilities using cdk-virtual-scroll. It provides most major features of the original Angular Material Select component. The goal of this package is to provide a similar API and features as the original Angular Material Select component but with virtual scroll capabilities for handling large datasets efficiently.
 
 Features:
 
-- Virtual scroll
-- Multi select
+- Virtual scroll for large datasets (100,000+ items)
 - Single select
+- Multi select with checkboxes
+- Select all checkbox (for multi-select with filter)
 - Filterable options with search input
-- Clear buttons for filter and selection
+- Clearable selection
 - Loading spinner for async data
 - Integrates with Angular Material Form Field
+- Reactive Forms and Template-driven forms support
 - Custom trigger template
 - Custom option template
-- Keyboard navigation and shortcuts
-- Theming trough css variables
+- Full keyboard navigation and shortcuts
+- Type-ahead search
+- Theming through CSS variables
 
 Not Supported Features for now:
 
 - Animations
-- Custom Error state mather
+- Custom Error state matcher
 - Custom scroll strategy
-- Accessibility
+- Full accessibility (in progress)
 - Option groups
 
 [Demo](https://stackblitz.com/edit/demo-ngx-virtual-select-field)
@@ -72,7 +76,7 @@ Not Supported Features for now:
    })
    ```
 
-1. Create options collection in component. Options collection should be an array of objects with `value` and `label` properties. Optionally, you can add `disabled` property to disable specific options and `getLabel()` fot type ahead search.
+1. Create options collection in component. Options collection should be an array of objects with `value` and `label` properties. Optionally, you can add `disabled` property to disable specific options and `getLabel()` for type-ahead search.
 
     ```typescript
     ...
@@ -89,16 +93,16 @@ Not Supported Features for now:
     }
    ```
 
-1. Setup template markup. `ngxVirtualSelectFieldOptionFor` directive should be user to pass options collection to the component and provide custom option template.
+1. Setup template markup. `ngxVirtualSelectFieldOptionFor` directive should be used to pass options collection to the component and provide custom option template.
 
    ```html
    <mat-form-field>
      <mat-label>Virtual Select Field Example</mat-label>
      <ngx-virtual-select-field [value]="value">
-       <ngx-virtual-select-field-option 
-        *ngxVirtualSelectFieldOptionFor="let option of options" 
+       <ngx-virtual-select-field-option
+        *ngxVirtualSelectFieldOptionFor="let option of options"
         [value]="option.value"
-        [disabled]="option.disabled"> 
+        [disabled]="option.disabled">
         {{ option.label }}
       </ngx-virtual-select-field-option>
      </ngx-virtual-select-field>
@@ -120,9 +124,9 @@ Basic setup with value input and output binding
 <mat-form-field>
   <mat-label>Example</mat-label>
   <ngx-virtual-select-field [value]="value" (valueChange)="onValueChange($event)">
-    <ngx-virtual-select-field-option 
-      *ngxVirtualSelectFieldOptionFor="let option of options" [value]="option.value"> 
-      {{ option.label }} 
+    <ngx-virtual-select-field-option
+      *ngxVirtualSelectFieldOptionFor="let option of options" [value]="option.value">
+      {{ option.label }}
     </ngx-virtual-select-field-option>
   </ngx-virtual-select-field>
 </mat-form-field>
@@ -134,7 +138,7 @@ Form control integration
 <mat-form-field>
   <mat-label>Form Control Example</mat-label>
   <ngx-virtual-select-field [formControl]="formControl">
-    <ngx-virtual-select-field-option 
+    <ngx-virtual-select-field-option
       *ngxVirtualSelectFieldOptionFor="let option of options" [value]="option.value">
         {{ option.label }}
     </ngx-virtual-select-field-option>
@@ -148,10 +152,10 @@ Multi select
 <mat-form-field>
   <mat-label>Multi Select Example</mat-label>
   <ngx-virtual-select-field [value]="value" multiple (valueChange)="onValueChange($event)">
-    <ngx-virtual-select-field-option 
-      *ngxVirtualSelectFieldOptionFor="let option of options" 
-      [value]="option.value"> 
-      {{ option.label }} 
+    <ngx-virtual-select-field-option
+      *ngxVirtualSelectFieldOptionFor="let option of options"
+      [value]="option.value">
+      {{ option.label }}
     </ngx-virtual-select-field-option>
   </ngx-virtual-select-field>
 </mat-form-field>
@@ -213,6 +217,61 @@ Clearable select with clear button
 </mat-form-field>
 ```
 
+Loading state for async data
+
+```html
+<mat-form-field>
+  <mat-label>Async Example</mat-label>
+  <ngx-virtual-select-field
+    [value]="value"
+    [loading]="isLoading"
+    (valueChange)="onValueChange($event)">
+    <ngx-virtual-select-field-option
+      *ngxVirtualSelectFieldOptionFor="let option of options"
+      [value]="option.value">
+      {{ option.label }}
+    </ngx-virtual-select-field-option>
+  </ngx-virtual-select-field>
+</mat-form-field>
+```
+
+## Keyboard Shortcuts
+
+The component supports full keyboard navigation:
+
+### When Panel is Closed
+
+| Shortcut | Single Select | Multi Select |
+|----------|---------------|--------------|
+| `Space` / `Enter` | Open panel | Open panel |
+| `Alt + ArrowDown` | Open panel | Open panel |
+| `ArrowDown` / `ArrowUp` | Navigate & select | Open panel |
+| Type any character | Type-ahead search | Type-ahead search |
+
+### When Panel is Open
+
+| Shortcut | Description |
+|----------|-------------|
+| `ArrowDown` / `ArrowUp` | Navigate through options |
+| `Alt + ArrowDown` / `Alt + ArrowUp` | Close panel |
+| `Enter` / `Space` | Toggle selection of active option |
+| `Ctrl + A` | Select/deselect all options (multi-select only) |
+| `Shift + ArrowDown` / `Shift + ArrowUp` | Extend selection (multi-select only) |
+| `Home` / `End` | Jump to first/last option |
+| `Page Up` / `Page Down` | Navigate by page |
+| `Escape` | Close panel |
+| `Tab` | Select active item and close panel |
+| Type any character | Type-ahead search (300ms debounce) |
+
+### When Filter Input is Focused
+
+| Shortcut | Description |
+|----------|-------------|
+| `ArrowDown` / `ArrowUp` | Move focus to options list |
+| `ArrowLeft` / `ArrowRight` | Move cursor in filter input |
+| `Escape` | Close panel |
+| `Tab` | Close panel |
+
 ## Customization
 
 Components supports custom templates for trigger and option elements. You can use `ngx-virtual-select-field-trigger` and `ngx-virtual-select-field-option` components to define custom templates.
@@ -229,7 +288,7 @@ See more in API section below.
 
 ### NgxVirtualSelectFieldComponent<TValue>
 
-selector: `ngx-virtual-select-field`  
+selector: `ngx-virtual-select-field`
 Component to define select field
 
 | Input                     | Type                         | Default      | Description                                                                    |
@@ -246,20 +305,21 @@ Component to define select field
 | filterClearable           | `boolean`                    | `true`       | Show clear button in filter input                                              |
 | clearable                 | `boolean`                    | `false`      | Show clear button in select trigger to clear all selections                    |
 | loading                   | `boolean`                    | `false`      | Show loading spinner while data is being loaded                                |
+| showSelectAll             | `boolean`                    | `true`       | Show select all checkbox when multiple and filterable are enabled              |
 | value                     | `TValue[] \| TValue \| null` | `null`       | Value of the select field                                                      |
 | placeholder               | `string`                     | none         | Placeholder for the select field                                               |
-| required                  | `boolean`                    | `false`      | Define if fields is required                                                   |
-| disabled                  | `boolean`                    | `false`      | Define if fields is disabled                                                   |
+| required                  | `boolean`                    | `false`      | Define if field is required                                                   |
+| disabled                  | `boolean`                    | `false`      | Define if field is disabled                                                   |
 
 | Output          | Type                          | Description                |
 | --------------- | ----------------------------- | -------------------------- |
 | valueChange     | `TValue \| TValue[]`          | Value change output        |
-| selectionChange | `NgxVirtualSelectFieldChange` | Selecten change output     |
+| selectionChange | `NgxVirtualSelectFieldChange` | Selection change output     |
 
 
 ### NgxVirtualSelectFieldOptionComponent<TValue>
 
-selector: `ngx-virtual-select-field-option`  
+selector: `ngx-virtual-select-field-option`
 Component to define option element
 
 | Input            | Type      | Default | Description                    |
@@ -273,7 +333,7 @@ Component to define option element
 
 ### NgxVirtualSelectFieldOptionSelectionChangeEvent<TValue>
 
-Interface to define option selection change event contract  
+Interface to define option selection change event contract
 Properties:
 | Name | Type | Description |
 |----------|-----------------------------------------------------------|----------------------------|
@@ -283,12 +343,12 @@ Properties:
 
 ### NgxVirtualSelectFieldTriggerComponent
 
-selector: `ngx-virtual-select-field-trigger`  
+selector: `ngx-virtual-select-field-trigger`
 Directive to define custom trigger template
 
 ### NgxVirtualSelectFieldOptionForDirective
 
-selector: `*ngxVirtualSelectFieldOptionFor`  
+selector: `*ngxVirtualSelectFieldOptionFor`
 Directive to define custom option template and iterate over options
 | Input | Type | Description |
 |----------------------------------|----------------------------------------------|---------------------|
@@ -296,14 +356,14 @@ Directive to define custom option template and iterate over options
 
 ### NgxVirtualSelectFieldOptionModel<TValue>
 
-Interface to define option model contract  
+Interface to define option model contract
 Properties:
 | Name | Type | Description |
 |-----------------------|----------------------------------------------------------------|----------------------------|
 | value | `TValue` | Value of the option |
 | label | `string` | Label of the option |
 | disabled? | `boolean` | Whether the option is disabled |
-| getLabel() optional | `(option: NgxVirtualSelectFieldOptionModel<TValue>) => string` | Function to get label of the option |
+| getLabel() optional | `(option: NgxVirtualSelectFieldOptionModel<TValue>) => string` | Function to get label for type-ahead search |
 
 ### NGX_VIRTUAL_SELECT_FIELD_CONFIG
 
@@ -320,6 +380,7 @@ Properties:
 | overlayPanelClass | `string \| string[]` | CSS class to be added to the panel element|
 | optionHeight | `number` | Height for an option element |
 | panelViewportPageSize | `number` | Amount of visible items in list |
+| showSelectAll | `boolean` | Show select all checkbox when multiple and filterable |
 
 ### NgxVirtualSelectFieldChange
 
@@ -327,8 +388,8 @@ Class to define event for `selectionChange` output
 Properties:
 | Name | Type | Description |
 |-----------------------|--------------------------------------------|----------------------------|
-| source | `NgxVirtualSelectFieldComponent` | isntance of the selector component |
-| value | `TValue` or `TValue[]` | new selection value|
+| source | `NgxVirtualSelectFieldComponent` | Instance of the selector component |
+| value | `TValue` or `TValue[]` | New selection value|
 
 
 ### CSS variables
