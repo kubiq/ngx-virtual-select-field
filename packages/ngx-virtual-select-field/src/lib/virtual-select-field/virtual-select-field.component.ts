@@ -565,7 +565,7 @@ export class NgxVirtualSelectFieldComponent<TValue>
   ) {
     this.assertIsDefined(this.optionsQuery, `optionsQuery is not defined`);
 
-    const { option: changedOption, index: selectedIndex } =
+    const { option: changedOption } =
       this.findOptionByValue(options, selectionEvent.value);
 
     if (this.multiple) {
@@ -580,8 +580,14 @@ export class NgxVirtualSelectFieldComponent<TValue>
       this.close();
     }
 
+    // Use filteredOptions index for key manager since it's initialized with filtered list
     if (this._selectionModel.isSelected(changedOption)) {
-      this._keyManager?.setActiveItem(selectedIndex);
+      const filteredIndex = this.filteredOptions().findIndex(
+        (o) => o.value === changedOption.value,
+      );
+      if (filteredIndex >= 0) {
+        this._keyManager?.setActiveItem(filteredIndex);
+      }
     }
 
     // NOTE: this need to keep form field in focus state
