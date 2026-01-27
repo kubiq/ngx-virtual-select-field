@@ -123,6 +123,26 @@
 
 <div class="field-container">
   <mat-form-field class="field">
+    <mat-label>Toggle Loading Example (every 1s) - {{ isToggleLoading() ? 'Loading...' : 'Ready' }}</mat-label>
+    <ngx-virtual-select-field
+      [loading]="isToggleLoading()"
+      [value]="toggleLoadingValue"
+      (valueChange)="toggleLoadingValue = $event"
+    >
+      <ngx-virtual-select-field-option
+        *ngxVirtualSelectFieldOptionFor="let option of options"
+        [value]="option.value"
+        [disabled]="option.disabled"
+      >
+        {{ option.label }}</ngx-virtual-select-field-option
+      >
+    </ngx-virtual-select-field>
+  </mat-form-field>
+  {{ toggleLoadingValue }}
+</div>
+
+<div class="field-container">
+  <mat-form-field class="field">
     <mat-label>disabled Virtual Example</mat-label>
     <ngx-virtual-select-field multiple disabled [value]="[2]">
       <ngx-virtual-select-field-option

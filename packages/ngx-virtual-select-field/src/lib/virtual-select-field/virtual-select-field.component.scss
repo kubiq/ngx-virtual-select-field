@@ -145,6 +145,7 @@ $name-prefix: 'ngx-virtual-select-field';
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
+  overflow: hidden;
 
   :host-context(.mat-form-field-appearance-fill) & {
     transform: translateY(-8px);
@@ -161,6 +162,11 @@ $name-prefix: 'ngx-virtual-select-field';
   justify-content: center;
   width: 24px;
   height: 24px;
+
+  // Ensure mat-spinner doesn't affect layout
+  ::ng-deep .mat-mdc-progress-spinner {
+    display: block;
+  }
 }
 
 /* #endregion */
