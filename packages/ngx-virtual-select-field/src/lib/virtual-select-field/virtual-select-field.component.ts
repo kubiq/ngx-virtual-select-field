@@ -371,6 +371,7 @@ export class NgxVirtualSelectFieldComponent<TValue>
   protected readonly overlayWidth: Signal<string | number>;
 
   protected readonly isPanelOpened = signal(false);
+  private readonly _isClosing = signal(false);
   protected readonly filterText = signal('');
   protected readonly options = signal<
     NgxVirtualSelectFieldOptionModel<TValue>[]
@@ -438,8 +439,10 @@ export class NgxVirtualSelectFieldComponent<TValue>
 
     effect(() => {
       const filtered = this.filteredOptions();
-      // Only reinitialize key manager when panel is open to avoid issues during close
-      if (this._keyManager && this.isPanelOpened()) {
+      // Only reinitialize key manager when panel is open AND not in the process of closing.
+      // This prevents the freeze bug where clearing filterText during close() would
+      // trigger recomputation with all items and reinitialize key manager unnecessarily.
+      if (this._keyManager && this.isPanelOpened() && !this._isClosing()) {
         this.initListKeyManager(filtered);
       }
     });
@@ -548,17 +551,19 @@ export class NgxVirtualSelectFieldComponent<TValue>
       .pipe(
         startWith(this.optionsQuery),
         switchMap(() =>
-          merge(...this.optionsQuery!.map((option) => option.selectedChange)),
+          merge(...this.optionsQuery!.map((option) => option.selectedChange))
         ),
         takeUntilDestroyed(this._destroyRef),
       )
-      .subscribe((selectionEvent) =>
-        this.updateOptionSelection(selectionEvent, this.options()),
-      );
+      .subscribe((selectionEvent) => {
+        this.updateOptionSelection(selectionEvent, this.options());
+      });
 
     merge(this._scrolledIndexChange, this._selectionModel.changed)
       .pipe(takeUntilDestroyed(this._destroyRef), debounceTime(20))
-      .subscribe(() => this.updateRenderedOptionsState(this.options()));
+      .subscribe(() => {
+        this.updateRenderedOptionsState(this.options());
+      });
   }
 
   private updateOptionSelection(
@@ -574,11 +579,9 @@ export class NgxVirtualSelectFieldComponent<TValue>
       this._selectionModel.toggle(changedOption);
     } else if (changedOption.value === null) {
       this._selectionModel.clear();
-
       this.close();
     } else {
       this._selectionModel.select(changedOption);
-
       this.close();
     }
 
@@ -790,8 +793,17 @@ export class NgxVirtualSelectFieldComponent<TValue>
   }
 
   protected close() {
+    // Set closing flag FIRST to prevent the effect from running during close.
+    // This avoids the freeze bug where clearing filterText triggers filteredOptions
+    // recomputation back to all items while panel is still technically open.
+    this._isClosing.set(true);
+
     this.isPanelOpened.set(false);
     this.filterText.set(''); // Clear filter when closing
+
+    // Reset closing flag after signals are updated
+    this._isClosing.set(false);
+
     this._onTouched();
     this._stateChanges.next();
   }
@@ -1040,7 +1052,7 @@ export class NgxVirtualSelectFieldComponent<TValue>
   }
 
   private shouldScrollToActiveItem(targetIndex: number): boolean {
-    if (!this.isPanelOpened()) {
+    if (!this.isPanelOpened() || !this.cdkVirtualScrollViewport) {
       return false;
     }
 

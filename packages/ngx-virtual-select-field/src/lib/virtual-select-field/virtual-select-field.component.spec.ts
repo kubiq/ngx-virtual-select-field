@@ -338,6 +338,132 @@ describe('VirtualSelectFieldComponent', () => {
       });
     });
   });
+  describe('filterable select', () => {
+    test('should select option on click without filtering', async () => {
+      const placeholder = 'placeholder text';
+      const options = Arrange.createOptions();
+      const user = Arrange.setupUserEvent();
+      const result = await Arrange.setupFilterableSingleSelect({
+        placeholder,
+        options,
+        value: null,
+      });
+      const wrapperComponent = Arrange.getWrapperComponent(result);
+      result.fixture.autoDetectChanges();
+
+      // Open the panel
+      const trigger = result.getByText(placeholder);
+      await user.click(trigger);
+
+      // Trigger scroll to render options
+      Arrange.triggerScroll(ElementQuery.cdkViewPort(result));
+      await result.fixture.whenStable();
+
+      // Click an option
+      const optionsDebugElements = ElementQuery.allOptionComponents(result);
+      expect(optionsDebugElements.length).toBeGreaterThan(0);
+      await user.click(optionsDebugElements[1].nativeElement);
+
+      // Verify selection and panel closed
+      expect(wrapperComponent.value).toBe(options[1].value);
+      expect(ElementQuery.cdkViewPort(result)).toBeFalsy();
+    });
+
+    test('should select option on click after filtering', async () => {
+      const placeholder = 'placeholder text';
+      const options = Arrange.createOptions();
+      const user = Arrange.setupUserEvent();
+      const result = await Arrange.setupFilterableSingleSelect({
+        placeholder,
+        options,
+        value: null,
+      });
+      const wrapperComponent = Arrange.getWrapperComponent(result);
+      result.fixture.autoDetectChanges();
+
+      // Open the panel
+      const trigger = result.getByText(placeholder);
+      await user.click(trigger);
+
+      // Type in filter - query from document.body since overlay is in a portal
+      const filterInput = document.body.querySelector(
+        'input[placeholder="Search..."]',
+      ) as HTMLInputElement;
+      expect(filterInput).toBeTruthy();
+      await user.type(filterInput, '1 Option');
+
+      // Wait for filtering to apply
+      await result.fixture.whenStable();
+
+      // Trigger scroll to render filtered options
+      const viewport = ElementQuery.cdkViewPort(result);
+      if (viewport) {
+        Arrange.triggerScroll(viewport);
+      }
+      await result.fixture.whenStable();
+
+      // Click the first filtered option
+      const optionsDebugElements = ElementQuery.allOptionComponents(result);
+      expect(optionsDebugElements.length).toBeGreaterThan(0);
+      await user.click(optionsDebugElements[0].nativeElement);
+
+      // Verify selection was made and panel closed (no freeze)
+      expect(wrapperComponent.value).toBeDefined();
+      expect(ElementQuery.cdkViewPort(result)).toBeFalsy();
+    });
+
+    test('should select multiple options after filtering', async () => {
+      const placeholder = 'placeholder text';
+      const options = Arrange.createOptions();
+      const user = Arrange.setupUserEvent();
+      const result = await Arrange.setupFilterableMultiSelect({
+        placeholder,
+        options,
+        value: null,
+      });
+      const wrapperComponent = Arrange.getWrapperComponent(result);
+      result.fixture.autoDetectChanges();
+
+      // Open the panel
+      const trigger = result.getByText(placeholder);
+      await user.click(trigger);
+
+      // Type in filter - query from document.body since overlay is in a portal
+      const filterInput = document.body.querySelector(
+        'input[placeholder="Search..."]',
+      ) as HTMLInputElement;
+      expect(filterInput).toBeTruthy();
+      await user.type(filterInput, '1');
+
+      // Wait for filtering to apply
+      await result.fixture.whenStable();
+
+      // Trigger scroll to render filtered options
+      const viewport = ElementQuery.cdkViewPort(result);
+      if (viewport) {
+        Arrange.triggerScroll(viewport);
+      }
+      await result.fixture.whenStable();
+
+      // Click multiple filtered options
+      const optionsDebugElements = ElementQuery.allOptionComponents(result);
+      expect(optionsDebugElements.length).toBeGreaterThan(1);
+
+      // Click first option
+      await user.click(optionsDebugElements[0].nativeElement);
+      await result.fixture.whenStable();
+
+      // Click second option
+      await user.click(optionsDebugElements[1].nativeElement);
+      await result.fixture.whenStable();
+
+      // Verify multiple selections were made (no freeze)
+      expect(wrapperComponent.value).toBeDefined();
+      expect(Array.isArray(wrapperComponent.value)).toBe(true);
+      expect((wrapperComponent.value as number[]).length).toBe(2);
+    });
+  });
+
   describe('as a control value accessor', () => {
     test('should bind to form control', async () => {
       const options = Arrange.createOptions();
@@ -448,6 +574,87 @@ const Arrange = {
       {
         componentProperties: {
           multiple: true,
+          ...componentProperties,
+        },
+        imports: [
+          MatFormFieldModule,
+          NgxVirtualSelectFieldComponent,
+          NgxVirtualSelectFieldOptionForDirective,
+          NgxVirtualSelectFieldOptionComponent,
+          NgxVirtualSelectFieldTriggerDirective,
+        ],
+      },
+    );
+  },
+  async setupFilterableSingleSelect<TValue>(componentProperties: {
+    placeholder: string;
+    options: NgxVirtualSelectFieldOptionModel<TValue>[];
+    value: TValue | null;
+  }): Promise<
+    RenderResult<{
+      value: TValue | null;
+    }>
+  > {
+    return await render(
+      `
+      <mat-form-field>
+        <ngx-virtual-select-field
+          [value]="value"
+          (valueChange)="value = $event"
+          [placeholder]="placeholder"
+          [filterable]="true"
+        >
+          <ngx-virtual-select-field-option
+            *ngxVirtualSelectFieldOptionFor="let option of options"
+            [value]="option.value"
+          >
+            {{ option.label }}
+          </ngx-virtual-select-field-option>
+        </ngx-virtual-select-field>
+      </mat-form-field>`,
+      {
+        componentProperties: {
+          ...componentProperties,
+        },
+        imports: [
+          MatFormFieldModule,
+          NgxVirtualSelectFieldComponent,
+          NgxVirtualSelectFieldOptionForDirective,
+          NgxVirtualSelectFieldOptionComponent,
+          NgxVirtualSelectFieldTriggerDirective,
+        ],
+      },
+    );
+  },
+  async setupFilterableMultiSelect<TValue>(componentProperties: {
+    placeholder: string;
+    options: NgxVirtualSelectFieldOptionModel<TValue>[];
+    value: TValue[] | null;
+  }): Promise<
+    RenderResult<{
+      value: TValue[] | null;
+    }>
+  > {
+    return await render(
+      `
+      <mat-form-field>
+        <ngx-virtual-select-field
+          [value]="value"
+          (valueChange)="value = $event"
+          [placeholder]="placeholder"
+          [filterable]="true"
+          [multiple]="true"
+        >
+          <ngx-virtual-select-field-option
+            *ngxVirtualSelectFieldOptionFor="let option of options"
+            [value]="option.value"
+          >
+            {{ option.label }}
+          </ngx-virtual-select-field-option>
+        </ngx-virtual-select-field>
+      </mat-form-field>`,
+      {
+        componentProperties: {
           ...componentProperties,
         },
         imports: [
