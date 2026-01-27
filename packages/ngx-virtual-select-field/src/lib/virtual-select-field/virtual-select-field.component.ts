@@ -371,7 +371,6 @@ export class NgxVirtualSelectFieldComponent<TValue>
   protected readonly overlayWidth: Signal<string | number>;
 
   protected readonly isPanelOpened = signal(false);
-  private readonly _isClosing = signal(false);
   protected readonly filterText = signal('');
   protected readonly options = signal<
     NgxVirtualSelectFieldOptionModel<TValue>[]
@@ -437,15 +436,12 @@ export class NgxVirtualSelectFieldComponent<TValue>
       ? `mat-${this._parentFormField.color}`
       : '';
 
-    effect(() => {
-      const filtered = this.filteredOptions();
-      // Only reinitialize key manager when panel is open AND not in the process of closing.
-      // This prevents the freeze bug where clearing filterText during close() would
-      // trigger recomputation with all items and reinitialize key manager unnecessarily.
-      if (this._keyManager && this.isPanelOpened() && !this._isClosing()) {
-        this.initListKeyManager(filtered);
-      }
-    });
+    // NOTE: Key manager is now updated explicitly in onFilterInput() instead of via effect.
+    // The previous effect caused infinite loops because:
+    // 1. open() called initListKeyManager() then isPanelOpened.set(true)
+    // 2. Setting isPanelOpened triggered the effect
+    // 3. Effect called initListKeyManager() again
+    // 4. This created cascading updates that froze the browser
   }
 
   private createOverlayWidthSignal() {
@@ -708,10 +704,22 @@ export class NgxVirtualSelectFieldComponent<TValue>
   protected onFilterInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.filterText.set(input.value);
+
+    // Update key manager with new filtered options
+    // This replaces the previous effect-based approach which caused infinite loops
+    if (this._keyManager && this.isPanelOpened()) {
+      this.initListKeyManager(this.filteredOptions());
+    }
   }
 
   protected onFilterClear(): void {
     this.filterText.set('');
+
+    // Update key manager with all options (filter cleared)
+    if (this._keyManager && this.isPanelOpened()) {
+      this.initListKeyManager(this.filteredOptions());
+    }
+
     // Re-focus the filter input after clearing
     setTimeout(() => {
       this.filterInput?.nativeElement.focus();
@@ -793,17 +801,8 @@ export class NgxVirtualSelectFieldComponent<TValue>
   }
 
   protected close() {
-    // Set closing flag FIRST to prevent the effect from running during close.
-    // This avoids the freeze bug where clearing filterText triggers filteredOptions
-    // recomputation back to all items while panel is still technically open.
-    this._isClosing.set(true);
-
     this.isPanelOpened.set(false);
     this.filterText.set(''); // Clear filter when closing
-
-    // Reset closing flag after signals are updated
-    this._isClosing.set(false);
-
     this._onTouched();
     this._stateChanges.next();
   }
