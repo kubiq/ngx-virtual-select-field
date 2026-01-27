@@ -741,23 +741,18 @@ export class NgxVirtualSelectFieldComponent<TValue>
   }
 
   protected onFilterKeyDown(event: KeyboardEvent): void {
-    const isArrowKey =
-      event.key === ARROW_DOWN_KEY ||
-      event.key === ARROW_UP_KEY ||
-      event.key === ARROW_LEFT_KEY ||
-      event.key === ARROW_RIGHT_KEY;
+    const isVerticalArrowKey =
+      event.key === ARROW_DOWN_KEY || event.key === ARROW_UP_KEY;
 
-    // Prevent arrow keys from propagating when there's text in the input
-    if (isArrowKey && this.filterText()) {
-      if (event.key === ARROW_DOWN_KEY || event.key === ARROW_UP_KEY) {
-        // Arrow down/up should move to the options list
-        event.preventDefault();
-        this.cdkVirtualScrollViewport.elementRef.nativeElement.focus();
-        this._keyManager?.onKeydown(event);
-      }
-      // Left/Right arrows should work normally in the input for cursor movement
+    // Arrow down/up should always move focus to the options list
+    if (isVerticalArrowKey) {
+      event.preventDefault();
+      this.cdkVirtualScrollViewport.elementRef.nativeElement.focus();
+      this._keyManager?.onKeydown(event);
       return;
     }
+
+    // Left/Right arrows work normally in the input for cursor movement
 
     // Allow other keys like Escape, Enter to work
     if (event.key === 'Escape') {
@@ -778,6 +773,9 @@ export class NgxVirtualSelectFieldComponent<TValue>
       this.preferredOverlayOrigin =
         this._parentFormField.getConnectedOverlayOrigin();
     }
+
+    // Initialize key manager when panel opens to enable keyboard navigation
+    this.initListKeyManager(this.filteredOptions());
 
     this.isPanelOpened.set(true);
   }
@@ -851,9 +849,14 @@ export class NgxVirtualSelectFieldComponent<TValue>
         isArrowKey &&
         event.shiftKey &&
         keyManager?.activeItem &&
-        keyManager?.activeItemIndex !== previouslyFocusedIndex
+        keyManager?.activeItemIndex !== previouslyFocusedIndex &&
+        previouslyFocusedIndex != null
       ) {
-        this.selectOptionByValue(options, keyManager.activeItem.value);
+        // Select the item we navigated FROM (the previously focused item)
+        const previousOption = options[previouslyFocusedIndex];
+        if (previousOption) {
+          this.selectOptionByValue(options, previousOption.value);
+        }
       }
     }
   }
@@ -954,6 +957,11 @@ export class NgxVirtualSelectFieldComponent<TValue>
     });
 
     this._keyManager.change.subscribe((index) => {
+      // Only update option component styles when panel is open and options are rendered
+      if (!this.isPanelOpened()) {
+        return;
+      }
+
       this.assertIsDefined(this.optionsQuery, `optionsQuery is not defined`);
 
       this.updateActiveOptionComponent(

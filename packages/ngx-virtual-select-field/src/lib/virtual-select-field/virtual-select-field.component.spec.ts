@@ -175,8 +175,7 @@ describe('VirtualSelectFieldComponent', () => {
         await user.type(viewport.nativeElement, '{alt>}{arrowdown}{/alt}');
         expect(ElementQuery.cdkViewPort(result)).toBeFalsy();
       });
-      // TODO: Fix keyboard navigation tests after Angular 21 upgrade
-      test.skip('should select active item on enter', async () => {
+      test('should select active item on enter', async () => {
         const placeholder = 'placeholder text';
         const options = Arrange.createOptions();
         const user = Arrange.setupUserEvent();
@@ -242,8 +241,7 @@ describe('VirtualSelectFieldComponent', () => {
         await user.type(viewport.nativeElement, '[ControlLeft>][KeyA]');
         expect(wrapperComponent.value).toEqual([]);
       });
-      // TODO: Fix keyboard navigation tests after Angular 21 upgrade
-      test.skip('should append selected item on shift+arrowdown', async () => {
+      test('should append selected item on shift+arrowdown', async () => {
         const placeholder = 'placeholder text';
         const options = Arrange.createOptions();
         const user = Arrange.setupUserEvent();
@@ -323,8 +321,7 @@ describe('VirtualSelectFieldComponent', () => {
         await user.type(trigger, '{arrowdown}');
         expect(ElementQuery.cdkViewPort(result)).toBeTruthy();
       });
-      // TODO: Fix keyboard navigation tests after Angular 21 upgrade
-      test.skip('should select next item in single select on arrowdown', async () => {
+      test('should select next item in single select on arrowdown', async () => {
         const placeholder = 'placeholder text';
         const options = Arrange.createOptions();
         const result = await Arrange.setupSingleSelectAsMaterialFormField({
