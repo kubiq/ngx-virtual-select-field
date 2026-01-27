@@ -438,7 +438,8 @@ export class NgxVirtualSelectFieldComponent<TValue>
 
     effect(() => {
       const filtered = this.filteredOptions();
-      if (this._keyManager) {
+      // Only reinitialize key manager when panel is open to avoid issues during close
+      if (this._keyManager && this.isPanelOpened()) {
         this.initListKeyManager(filtered);
       }
     });
@@ -545,6 +546,7 @@ export class NgxVirtualSelectFieldComponent<TValue>
 
     this.optionsQuery.changes
       .pipe(
+        startWith(this.optionsQuery),
         switchMap(() =>
           merge(...this.optionsQuery!.map((option) => option.selectedChange)),
         ),
@@ -565,7 +567,7 @@ export class NgxVirtualSelectFieldComponent<TValue>
   ) {
     this.assertIsDefined(this.optionsQuery, `optionsQuery is not defined`);
 
-    const { option: changedOption, index: selectedIndex } =
+    const { option: changedOption } =
       this.findOptionByValue(options, selectionEvent.value);
 
     if (this.multiple) {
@@ -580,8 +582,15 @@ export class NgxVirtualSelectFieldComponent<TValue>
       this.close();
     }
 
-    if (this._selectionModel.isSelected(changedOption)) {
-      this._keyManager?.setActiveItem(selectedIndex);
+    // Use filteredOptions index for key manager since it's initialized with filtered list
+    // Only set active item when panel is open (for multiple select after selection)
+    if (this.isPanelOpened() && this._selectionModel.isSelected(changedOption)) {
+      const filteredIndex = this.filteredOptions().findIndex(
+        (o) => o.value === changedOption.value,
+      );
+      if (filteredIndex >= 0) {
+        this._keyManager?.setActiveItem(filteredIndex);
+      }
     }
 
     // NOTE: this need to keep form field in focus state
@@ -807,7 +816,10 @@ export class NgxVirtualSelectFieldComponent<TValue>
     const keyManager = this._keyManager;
     const activeItem = keyManager?.activeItem;
     const isTyping = keyManager?.isTyping();
-    const options = this.optionFor.options$.value;
+    // Use all options for selection operations (values are unique)
+    const allOptions = this.optionFor.options$.value;
+    // Use filtered options for index-based operations (key manager uses filtered list)
+    const keyManagerOptions = this.filteredOptions();
     const isArrowKey =
       event.key === ARROW_DOWN_KEY || event.key === ARROW_UP_KEY;
 
@@ -823,7 +835,7 @@ export class NgxVirtualSelectFieldComponent<TValue>
     ) {
       event.preventDefault();
 
-      const { option } = this.findOptionByValue(options, activeItem.value);
+      const { option } = this.findOptionByValue(allOptions, activeItem.value);
 
       this._selectionModel.toggle(option);
 
@@ -836,7 +848,7 @@ export class NgxVirtualSelectFieldComponent<TValue>
     ) {
       event.preventDefault();
 
-      this.toggleAllOptions(options);
+      this.toggleAllOptions(allOptions);
 
       this.emitValue();
     } else {
@@ -853,9 +865,10 @@ export class NgxVirtualSelectFieldComponent<TValue>
         previouslyFocusedIndex != null
       ) {
         // Select the item we navigated FROM (the previously focused item)
-        const previousOption = options[previouslyFocusedIndex];
+        // Use keyManagerOptions since index is from the key manager (filtered list)
+        const previousOption = keyManagerOptions[previouslyFocusedIndex];
         if (previousOption) {
-          this.selectOptionByValue(options, previousOption.value);
+          this.selectOptionByValue(allOptions, previousOption.value);
         }
       }
     }
