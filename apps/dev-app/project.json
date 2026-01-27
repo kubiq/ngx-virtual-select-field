@@ -89,12 +89,15 @@
       }
     },
     "test": {
-      "executor": "@nx/jest:jest",
-      "outputs": [
-        "{workspaceRoot}/coverage/{projectRoot}"
-      ],
+      "executor": "nx:run-commands",
       "options": {
-        "jestConfig": "apps/dev-app/jest.config.ts"
+        "command": "vitest run --config apps/dev-app/vitest.config.ts"
+      }
+    },
+    "test:watch": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest --config apps/dev-app/vitest.config.ts"
       }
     }
   }

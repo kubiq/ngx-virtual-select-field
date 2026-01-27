@@ -23,10 +23,15 @@
       "defaultConfiguration": "production"
     },
     "test": {
-      "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "executor": "nx:run-commands",
       "options": {
-        "jestConfig": "packages/ngx-virtual-select-field/jest.config.ts"
+        "command": "vitest run --config packages/ngx-virtual-select-field/vitest.config.ts"
+      }
+    },
+    "test:watch": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest --config packages/ngx-virtual-select-field/vitest.config.ts"
       }
     },
     "lint": {

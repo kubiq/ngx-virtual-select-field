@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { RenderResult, render } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { MatPseudoCheckbox } from '@angular/material/core';
@@ -180,7 +181,7 @@ const arrange = {
   spySelectedChangeEmit(
     result: RenderResult<NgxVirtualSelectFieldOptionComponent<number>>,
   ) {
-    return jest.spyOn(result.fixture.componentInstance.selectedChange, 'emit');
+    return vi.spyOn(result.fixture.componentInstance.selectedChange, 'emit');
   },
 };
 const asserts = {
