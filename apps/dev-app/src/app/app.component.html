@@ -103,6 +103,31 @@
 
 <div class="field-container">
   <mat-form-field class="field">
+    <mat-label>Max 3 Items Example (no select all)</mat-label>
+    <ngx-virtual-select-field
+      filterable
+      filterClearable
+      filterPlaceholder="Type to filter..."
+      multiple
+      [showSelectAll]="false"
+      [maxSelectedItems]="3"
+      [value]="maxSelectedValue"
+      (valueChange)="maxSelectedValue = $event"
+    >
+      <ngx-virtual-select-field-option
+        *ngxVirtualSelectFieldOptionFor="let option of options"
+        [value]="option.value"
+        [disabled]="option.disabled"
+      >
+        {{ option.label }}</ngx-virtual-select-field-option
+      >
+    </ngx-virtual-select-field>
+  </mat-form-field>
+</div>
+<div>{{ maxSelectedValue | json }}</div>
+
+<div class="field-container">
+  <mat-form-field class="field">
     <mat-label>Loading Example</mat-label>
     <ngx-virtual-select-field
       [loading]="isLoading"

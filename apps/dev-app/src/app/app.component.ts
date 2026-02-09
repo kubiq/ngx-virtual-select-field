@@ -34,6 +34,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   multiselectValue: number[] | null = null;
 
+  maxSelectedValue: number[] | null = null;
+
   singleValueWithSelected: number = 16;
 
   multiselectValueWithDefault: number[] = [1, 9, 76];

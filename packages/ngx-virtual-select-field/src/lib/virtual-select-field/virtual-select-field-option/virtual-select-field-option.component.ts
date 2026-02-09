@@ -8,7 +8,6 @@ import {
   signal,
   booleanAttribute,
   ElementRef,
-  computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -35,7 +34,7 @@ import { Highlightable } from '@angular/cdk/a11y';
     '[class.ngx-virtual-select-field-option--active]': 'active()',
     '[class.ngx-virtual-select-field-option--selected]': 'selected()',
     '[class.ngx-virtual-select-field-option--multiple]': 'multiple',
-    '[class.ngx-virtual-select-field-option--disabled]': 'disabled || isMaxDisabled()',
+    '[class.ngx-virtual-select-field-option--disabled]': 'disabled || isMaxDisabled',
     class: 'ngx-virtual-select-field-option',
   },
 })
@@ -68,9 +67,11 @@ export class NgxVirtualSelectFieldOptionComponent<TValue>
 
   /**
    * Whether this option is disabled because max selection limit is reached
-   * and this option is not currently selected
+   * and this option is not currently selected.
+   * Using a getter instead of computed because virtual scroll reuses components
+   * and the value input changes without triggering signal updates.
    */
-  protected readonly isMaxDisabled = computed(() => {
+  protected get isMaxDisabled(): boolean {
     if (!this._optionParent?.isMaxSelected) {
       return false;
     }
@@ -81,7 +82,7 @@ export class NgxVirtualSelectFieldOptionComponent<TValue>
     // If max is reached, disable if this option is NOT selected
     const isSelected = this._optionParent.isOptionSelected?.(this.value) ?? false;
     return !isSelected;
-  });
+  }
 
   protected readonly hostNativeElement: HTMLElement;
 
@@ -118,7 +119,7 @@ export class NgxVirtualSelectFieldOptionComponent<TValue>
   }
 
   protected onClick() {
-    if (this.disabled || this.isMaxDisabled()) {
+    if (this.disabled || this.isMaxDisabled) {
       return;
     }
 

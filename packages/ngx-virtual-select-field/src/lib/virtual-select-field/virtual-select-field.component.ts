@@ -280,6 +280,9 @@ export class NgxVirtualSelectFieldComponent<TValue>
       ),
     );
 
+    // Update selection count signal for reactivity
+    this.selectedCount.set(this._value.length);
+
     this._stateChanges.next();
   }
   private _value: TValue[] = [];
@@ -407,14 +410,19 @@ export class NgxVirtualSelectFieldComponent<TValue>
   });
 
   /**
+   * Track selection count as a signal so computed properties react to changes
+   */
+  private readonly selectedCount = signal(0);
+
+  /**
    * Check if max selection limit is reached
    * Public so option components can access it via the parent interface
    */
   readonly isMaxSelected = computed(() => {
-    if (!this.maxSelectedItems || !this._selectionModel) {
+    if (!this.maxSelectedItems) {
       return false;
     }
-    return this._selectionModel.selected.length >= this.maxSelectedItems;
+    return this.selectedCount() >= this.maxSelectedItems;
   });
 
   protected triggerValue$: Observable<string> | null = null;
@@ -1188,6 +1196,9 @@ export class NgxVirtualSelectFieldComponent<TValue>
 
   private emitValue(): void {
     this._value = this._selectionModel.selected.map((option) => option.value);
+
+    // Update selection count signal for reactivity
+    this.selectedCount.set(this._selectionModel.selected.length);
 
     const outputValue = this.multiple ? this._value : this._value[0];
 
