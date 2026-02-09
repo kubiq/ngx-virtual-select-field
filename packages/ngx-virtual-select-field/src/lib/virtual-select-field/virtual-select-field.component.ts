@@ -20,7 +20,6 @@ import {
   ViewChild,
   booleanAttribute,
   computed,
-  effect,
   inject,
   numberAttribute,
   output,
@@ -249,6 +248,15 @@ export class NgxVirtualSelectFieldComponent<TValue>
   showSelectAll: boolean = this._defaultOptions?.showSelectAll ?? true;
 
   /**
+   * Maximum number of items that can be selected (only applies when multiple is true)
+   * @default null (no limit)
+   */
+  @Input({
+    transform: (value: unknown) => numberAttribute(value, 0),
+  })
+  maxSelectedItems: number = 0;
+
+  /**
    * Value of the select field
    * @default null
    */
@@ -396,6 +404,17 @@ export class NgxVirtualSelectFieldComponent<TValue>
     const filtered = this.filteredOptions();
     const hasFilter = this.filterText().trim().length > 0;
     return hasFilter && filtered.length === 0 && this.options().length > 0;
+  });
+
+  /**
+   * Check if max selection limit is reached
+   * Public so option components can access it via the parent interface
+   */
+  readonly isMaxSelected = computed(() => {
+    if (!this.maxSelectedItems || !this._selectionModel) {
+      return false;
+    }
+    return this._selectionModel.selected.length >= this.maxSelectedItems;
   });
 
   protected triggerValue$: Observable<string> | null = null;
@@ -572,6 +591,13 @@ export class NgxVirtualSelectFieldComponent<TValue>
       this.findOptionByValue(options, selectionEvent.value);
 
     if (this.multiple) {
+      // Check max limit - allow deselect but prevent select if at max
+      const isCurrentlySelected = this._selectionModel.isSelected(changedOption);
+      if (!isCurrentlySelected && this.maxSelectedItems > 0 &&
+          this._selectionModel.selected.length >= this.maxSelectedItems) {
+        // Max reached, don't allow selecting more
+        return;
+      }
       this._selectionModel.toggle(changedOption);
     } else if (changedOption.value === null) {
       this._selectionModel.clear();
@@ -848,6 +874,14 @@ export class NgxVirtualSelectFieldComponent<TValue>
 
       const { option } = this.findOptionByValue(allOptions, activeItem.value);
 
+      // Check max limit - allow deselect but prevent select if at max
+      const isCurrentlySelected = this._selectionModel.isSelected(option);
+      if (!isCurrentlySelected && this.maxSelectedItems > 0 &&
+          this._selectionModel.selected.length >= this.maxSelectedItems) {
+        // Max reached, don't allow selecting more
+        return;
+      }
+
       this._selectionModel.toggle(option);
 
       this.emitValue();
@@ -894,7 +928,13 @@ export class NgxVirtualSelectFieldComponent<TValue>
       enabledOptionValues.length > this._selectionModel.selected.length;
 
     if (hasDeselectedOptions) {
-      this._selectionModel.select(...enabledOptionValues);
+      // Respect max limit when selecting all
+      if (this.maxSelectedItems > 0) {
+        const toSelect = enabledOptionValues.slice(0, this.maxSelectedItems);
+        this._selectionModel.select(...toSelect);
+      } else {
+        this._selectionModel.select(...enabledOptionValues);
+      }
     } else {
       this._selectionModel.clear();
     }
@@ -1083,6 +1123,17 @@ export class NgxVirtualSelectFieldComponent<TValue>
 
   // #endregion Key manager
 
+  /**
+   * Check if a specific option is currently selected
+   * Used by option components to determine their disabled state when max is reached
+   */
+  isOptionSelected(value: TValue): boolean {
+    if (!this._selectionModel) {
+      return false;
+    }
+    return this._selectionModel.selected.some((opt) => opt.value === value);
+  }
+
   private focus() {
     this._elRef.nativeElement.focus();
   }
@@ -1092,6 +1143,13 @@ export class NgxVirtualSelectFieldComponent<TValue>
     value: TValue,
   ) {
     const { option } = this.findOptionByValue(options, value);
+
+    // Check max limit before selecting
+    if (this.maxSelectedItems > 0 &&
+        !this._selectionModel.isSelected(option) &&
+        this._selectionModel.selected.length >= this.maxSelectedItems) {
+      return;
+    }
 
     this._selectionModel.select(option);
 

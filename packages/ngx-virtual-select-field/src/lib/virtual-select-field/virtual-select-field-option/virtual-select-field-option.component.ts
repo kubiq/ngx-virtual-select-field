@@ -8,6 +8,7 @@ import {
   signal,
   booleanAttribute,
   ElementRef,
+  computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -34,7 +35,7 @@ import { Highlightable } from '@angular/cdk/a11y';
     '[class.ngx-virtual-select-field-option--active]': 'active()',
     '[class.ngx-virtual-select-field-option--selected]': 'selected()',
     '[class.ngx-virtual-select-field-option--multiple]': 'multiple',
-    '[class.ngx-virtual-select-field-option--disabled]': 'disabled',
+    '[class.ngx-virtual-select-field-option--disabled]': 'disabled || isMaxDisabled()',
     class: 'ngx-virtual-select-field-option',
   },
 })
@@ -64,6 +65,23 @@ export class NgxVirtualSelectFieldOptionComponent<TValue>
   protected readonly active = signal(false);
 
   protected readonly selected = signal(false);
+
+  /**
+   * Whether this option is disabled because max selection limit is reached
+   * and this option is not currently selected
+   */
+  protected readonly isMaxDisabled = computed(() => {
+    if (!this._optionParent?.isMaxSelected) {
+      return false;
+    }
+    const maxReached = this._optionParent.isMaxSelected();
+    if (!maxReached) {
+      return false;
+    }
+    // If max is reached, disable if this option is NOT selected
+    const isSelected = this._optionParent.isOptionSelected?.(this.value) ?? false;
+    return !isSelected;
+  });
 
   protected readonly hostNativeElement: HTMLElement;
 
@@ -100,7 +118,7 @@ export class NgxVirtualSelectFieldOptionComponent<TValue>
   }
 
   protected onClick() {
-    if (this.disabled) {
+    if (this.disabled || this.isMaxDisabled()) {
       return;
     }
 
