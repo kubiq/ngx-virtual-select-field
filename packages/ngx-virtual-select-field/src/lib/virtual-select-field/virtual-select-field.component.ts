@@ -1178,10 +1178,10 @@ export class NgxVirtualSelectFieldComponent<TValue>
       (option) => option.value === value,
     );
 
-    this.assertIsDefined(
-      optionComponent,
-      `Option component with value ${value} not found`,
-    );
+    // Option might not be rendered due to virtual scroll - skip if not found
+    if (!optionComponent) {
+      return;
+    }
 
     optionComponent.setActiveStyles();
   }
