@@ -722,6 +722,44 @@ describe('VirtualSelectFieldComponent', () => {
       expect(selectAllCheckbox.classList.contains('mat-pseudo-checkbox-checked')).toBe(false);
       expect(selectAllCheckbox.classList.contains('mat-pseudo-checkbox-indeterminate')).toBe(false);
     });
+
+    test('should show checked state when single filtered option is selected', async () => {
+      const placeholder = 'placeholder text';
+      // Create options with unique labels to ensure only one matches
+      const options = [
+        { value: 1, label: 'Apple', disabled: false },
+        { value: 2, label: 'Banana', disabled: false },
+        { value: 3, label: 'Cherry', disabled: false },
+        { value: 4, label: 'Date', disabled: false },
+      ];
+      const user = Arrange.setupUserEvent();
+      // Pre-select the option that will be the only match
+      const result = await Arrange.setupFilterableMultiSelect({
+        placeholder,
+        options,
+        value: [1], // Apple is selected
+      });
+      result.fixture.autoDetectChanges();
+
+      // Open the panel
+      const trigger = result.getByText('Apple');
+      await user.click(trigger);
+
+      // Type filter that matches only "Apple"
+      const filterInput = document.body.querySelector(
+        'input[placeholder="Search..."]',
+      ) as HTMLInputElement;
+      await user.type(filterInput, 'Apple');
+      await result.fixture.whenStable();
+
+      // Check that the checkbox is in checked state (only 1 option matches, and it's selected)
+      const selectAllCheckbox = document.body.querySelector(
+        '.ngx-virtual-select-field-select-all mat-pseudo-checkbox',
+      ) as HTMLElement;
+      expect(selectAllCheckbox).toBeTruthy();
+      expect(selectAllCheckbox.classList.contains('mat-pseudo-checkbox-checked')).toBe(true);
+      expect(selectAllCheckbox.classList.contains('mat-pseudo-checkbox-indeterminate')).toBe(false);
+    });
   });
 
   describe('as a control value accessor', () => {

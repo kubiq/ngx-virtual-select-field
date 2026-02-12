@@ -1196,7 +1196,9 @@ export class NgxVirtualSelectFieldComponent<TValue>
     if (!this._selectionModel) {
       return false;
     }
-    return this._selectionModel.selected.some((opt) => opt.value === value);
+    return this._selectionModel.selected.some(
+      (opt) => opt != null && opt.value === value,
+    );
   }
 
   /**
@@ -1207,7 +1209,11 @@ export class NgxVirtualSelectFieldComponent<TValue>
     if (!this._selectionModel) {
       return new Set();
     }
-    return new Set(this._selectionModel.selected.map((opt) => opt.value));
+    return new Set(
+      this._selectionModel.selected
+        .filter((opt) => opt != null)
+        .map((opt) => opt.value),
+    );
   }
 
   private focus() {
