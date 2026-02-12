@@ -781,10 +781,9 @@ export class NgxVirtualSelectFieldComponent<TValue>
       return false;
     }
 
-    // Check if all enabled options in the current view are selected
-    return enabledOptions.every((option) =>
-      this._selectionModel.isSelected(option),
-    );
+    // Use Set for O(1) lookups instead of iterating selected array for each option
+    const selectedValues = this.getSelectedValuesSet();
+    return enabledOptions.every((option) => selectedValues.has(option.value));
   }
 
   protected isIndeterminate(): boolean {
@@ -802,8 +801,10 @@ export class NgxVirtualSelectFieldComponent<TValue>
       return false;
     }
 
+    // Use Set for O(1) lookups instead of iterating selected array for each option
+    const selectedValues = this.getSelectedValuesSet();
     const selectedInView = enabledOptions.filter((option) =>
-      this._selectionModel.isSelected(option),
+      selectedValues.has(option.value),
     ).length;
 
     return selectedInView > 0 && selectedInView < enabledOptions.length;
@@ -967,14 +968,22 @@ export class NgxVirtualSelectFieldComponent<TValue>
   ) {
     const enabledOptions = options.filter((option) => !option.disabled);
 
+    // Use Set for O(1) lookups
+    const selectedValues = this.getSelectedValuesSet();
+
     // Check if all provided options are currently selected
     const allSelected = enabledOptions.every((option) =>
-      this._selectionModel.isSelected(option),
+      selectedValues.has(option.value),
     );
 
     if (allSelected) {
       // Deselect only the provided options (important for filtered selection)
-      this._selectionModel.deselect(...enabledOptions);
+      // Find matching options in selection model by value
+      const valuesToDeselect = new Set(enabledOptions.map((o) => o.value));
+      const optionsToDeselect = this._selectionModel.selected.filter((o) =>
+        valuesToDeselect.has(o.value),
+      );
+      this._selectionModel.deselect(...optionsToDeselect);
     } else {
       // Select all provided options
       // Respect max limit when selecting all
@@ -982,12 +991,16 @@ export class NgxVirtualSelectFieldComponent<TValue>
         const currentCount = this._selectionModel.selected.length;
         const remainingSlots = this.maxSelectedItems - currentCount;
         const notYetSelected = enabledOptions.filter(
-          (option) => !this._selectionModel.isSelected(option),
+          (option) => !selectedValues.has(option.value),
         );
         const toSelect = notYetSelected.slice(0, remainingSlots);
         this._selectionModel.select(...toSelect);
       } else {
-        this._selectionModel.select(...enabledOptions);
+        // Filter out already selected to avoid duplicates
+        const notYetSelected = enabledOptions.filter(
+          (option) => !selectedValues.has(option.value),
+        );
+        this._selectionModel.select(...notYetSelected);
       }
     }
   }
@@ -1186,6 +1199,17 @@ export class NgxVirtualSelectFieldComponent<TValue>
     return this._selectionModel.selected.some((opt) => opt.value === value);
   }
 
+  /**
+   * Get a Set of selected values for O(1) lookup performance
+   * Used internally for bulk selection checks
+   */
+  private getSelectedValuesSet(): Set<TValue> {
+    if (!this._selectionModel) {
+      return new Set();
+    }
+    return new Set(this._selectionModel.selected.map((opt) => opt.value));
+  }
+
   private focus() {
     this._elRef.nativeElement.focus();
   }
@@ -1209,14 +1233,17 @@ export class NgxVirtualSelectFieldComponent<TValue>
   }
 
   private updateRenderedOptionsState(
-    options: NgxVirtualSelectFieldOptionModel<TValue>[],
+    _options: NgxVirtualSelectFieldOptionModel<TValue>[],
   ) {
     this.assertIsDefined(this.optionsQuery, `optionsQuery is not defined`);
 
-    this.optionsQuery.forEach((optionComponent) => {
-      const { option } = this.findOptionByValue(options, optionComponent.value);
+    // Use Set for O(1) lookups instead of iterating selected array for each option
+    const selectedValues = this.getSelectedValuesSet();
 
-      if (this._selectionModel.isSelected(option)) {
+    this.optionsQuery.forEach((optionComponent) => {
+      // Use value-based comparison instead of reference comparison
+      // This fixes issues with virtual scroll where option references may change
+      if (selectedValues.has(optionComponent.value)) {
         optionComponent.select();
       } else {
         // NOTE: deselect for all is needed because of virtual scroll and reusing options
