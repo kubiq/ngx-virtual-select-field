@@ -771,10 +771,19 @@ export class NgxVirtualSelectFieldComponent<TValue>
       return false;
     }
 
-    const enabledOptions = this.options().filter((option) => !option.disabled);
-    return (
-      enabledOptions.length > 0 &&
-      enabledOptions.length === this._selectionModel.selected.length
+    // When filter is active, check against filtered options
+    const optionsToCheck = this.hasActiveFilter()
+      ? this.filteredOptions()
+      : this.options();
+    const enabledOptions = optionsToCheck.filter((option) => !option.disabled);
+
+    if (enabledOptions.length === 0) {
+      return false;
+    }
+
+    // Check if all enabled options in the current view are selected
+    return enabledOptions.every((option) =>
+      this._selectionModel.isSelected(option),
     );
   }
 
@@ -783,15 +792,37 @@ export class NgxVirtualSelectFieldComponent<TValue>
       return false;
     }
 
-    const selectedCount = this._selectionModel.selected.length;
-    const enabledOptions = this.options().filter((option) => !option.disabled);
+    // When filter is active, check against filtered options
+    const optionsToCheck = this.hasActiveFilter()
+      ? this.filteredOptions()
+      : this.options();
+    const enabledOptions = optionsToCheck.filter((option) => !option.disabled);
 
-    return selectedCount > 0 && selectedCount < enabledOptions.length;
+    if (enabledOptions.length === 0) {
+      return false;
+    }
+
+    const selectedInView = enabledOptions.filter((option) =>
+      this._selectionModel.isSelected(option),
+    ).length;
+
+    return selectedInView > 0 && selectedInView < enabledOptions.length;
   }
 
   protected onSelectAllChange(): void {
-    this.toggleAllOptions(this.options());
+    // When filter is active, toggle only filtered options
+    const optionsToToggle = this.hasActiveFilter()
+      ? this.filteredOptions()
+      : this.options();
+    this.toggleAllOptions(optionsToToggle);
     this.emitValue();
+  }
+
+  /**
+   * Returns true if there is an active filter text
+   */
+  private hasActiveFilter(): boolean {
+    return this.filterText().trim().length > 0;
   }
 
   protected onFilterKeyDown(event: KeyboardEvent): void {
@@ -901,7 +932,11 @@ export class NgxVirtualSelectFieldComponent<TValue>
     ) {
       event.preventDefault();
 
-      this.toggleAllOptions(allOptions);
+      // When filter is active, toggle only filtered options
+      const optionsToToggle = this.hasActiveFilter()
+        ? keyManagerOptions
+        : allOptions;
+      this.toggleAllOptions(optionsToToggle);
 
       this.emitValue();
     } else {
@@ -930,21 +965,30 @@ export class NgxVirtualSelectFieldComponent<TValue>
   private toggleAllOptions(
     options: NgxVirtualSelectFieldOptionModel<TValue>[],
   ) {
-    const enabledOptionValues = options.filter((option) => !option.disabled);
+    const enabledOptions = options.filter((option) => !option.disabled);
 
-    const hasDeselectedOptions =
-      enabledOptionValues.length > this._selectionModel.selected.length;
+    // Check if all provided options are currently selected
+    const allSelected = enabledOptions.every((option) =>
+      this._selectionModel.isSelected(option),
+    );
 
-    if (hasDeselectedOptions) {
+    if (allSelected) {
+      // Deselect only the provided options (important for filtered selection)
+      this._selectionModel.deselect(...enabledOptions);
+    } else {
+      // Select all provided options
       // Respect max limit when selecting all
       if (this.maxSelectedItems > 0) {
-        const toSelect = enabledOptionValues.slice(0, this.maxSelectedItems);
+        const currentCount = this._selectionModel.selected.length;
+        const remainingSlots = this.maxSelectedItems - currentCount;
+        const notYetSelected = enabledOptions.filter(
+          (option) => !this._selectionModel.isSelected(option),
+        );
+        const toSelect = notYetSelected.slice(0, remainingSlots);
         this._selectionModel.select(...toSelect);
       } else {
-        this._selectionModel.select(...enabledOptionValues);
+        this._selectionModel.select(...enabledOptions);
       }
-    } else {
-      this._selectionModel.clear();
     }
   }
 

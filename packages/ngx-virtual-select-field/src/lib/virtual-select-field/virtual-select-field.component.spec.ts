@@ -462,6 +462,266 @@ describe('VirtualSelectFieldComponent', () => {
       expect(Array.isArray(wrapperComponent.value)).toBe(true);
       expect((wrapperComponent.value as number[]).length).toBe(2);
     });
+
+    test('should select only filtered options when clicking select-all checkbox with active filter', async () => {
+      const placeholder = 'placeholder text';
+      const options = Arrange.createOptions(20); // Options: "0 Option", "1 Option", ..., "19 Option"
+      const user = Arrange.setupUserEvent();
+      const result = await Arrange.setupFilterableMultiSelect({
+        placeholder,
+        options,
+        value: null,
+      });
+      const wrapperComponent = Arrange.getWrapperComponent(result);
+      result.fixture.autoDetectChanges();
+
+      // Open the panel
+      const trigger = result.getByText(placeholder);
+      await user.click(trigger);
+
+      // Type filter to show only options containing "1" (1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)
+      const filterInput = document.body.querySelector(
+        'input[placeholder="Search..."]',
+      ) as HTMLInputElement;
+      expect(filterInput).toBeTruthy();
+      await user.type(filterInput, '1');
+      await result.fixture.whenStable();
+
+      // Click the select-all checkbox
+      const selectAllCheckbox = document.body.querySelector(
+        '.ngx-virtual-select-field-select-all mat-pseudo-checkbox',
+      ) as HTMLElement;
+      expect(selectAllCheckbox).toBeTruthy();
+      await user.click(selectAllCheckbox);
+      await result.fixture.whenStable();
+
+      // Should select only options containing "1" that are not disabled
+      // Options with "1": 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
+      // Disabled: 0, 5, 10, 15 (index % 5 === 0)
+      // So enabled options with "1": 1, 11, 12, 13, 14, 16, 17, 18, 19
+      const selectedValues = wrapperComponent.value as number[];
+      expect(selectedValues).toBeDefined();
+      expect(Array.isArray(selectedValues)).toBe(true);
+
+      // Verify only filtered, enabled options are selected
+      const expectedValues = [1, 11, 12, 13, 14, 16, 17, 18, 19];
+      expect(selectedValues.sort((a, b) => a - b)).toEqual(expectedValues);
+    });
+
+    test('should deselect only filtered options when clicking select-all checkbox with all filtered selected', async () => {
+      const placeholder = 'placeholder text';
+      const options = Arrange.createOptions(20);
+      const user = Arrange.setupUserEvent();
+      // Pre-select some options including filtered ones and non-filtered ones
+      // Options containing "1": 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
+      // Also select option 2 (doesn't contain "1")
+      const initialSelection = [1, 2, 11, 12, 13, 14, 16, 17, 18, 19];
+      const result = await Arrange.setupFilterableMultiSelect({
+        placeholder,
+        options,
+        value: initialSelection,
+      });
+      const wrapperComponent = Arrange.getWrapperComponent(result);
+      result.fixture.autoDetectChanges();
+
+      // Open the panel
+      const triggerText = initialSelection.map((v) => `${v} Option`).join(', ');
+      const trigger = result.getByText(triggerText);
+      await user.click(trigger);
+
+      // Type filter to show only options containing "1"
+      const filterInput = document.body.querySelector(
+        'input[placeholder="Search..."]',
+      ) as HTMLInputElement;
+      await user.type(filterInput, '1');
+      await result.fixture.whenStable();
+
+      // Click the select-all checkbox to deselect all filtered options
+      const selectAllCheckbox = document.body.querySelector(
+        '.ngx-virtual-select-field-select-all mat-pseudo-checkbox',
+      ) as HTMLElement;
+      await user.click(selectAllCheckbox);
+      await result.fixture.whenStable();
+
+      // Should only deselect filtered options, keeping option 2 selected
+      const selectedValues = wrapperComponent.value as number[];
+      expect(selectedValues).toEqual([2]);
+    });
+
+    test('should select only filtered options with Ctrl+A when filter is active', async () => {
+      const placeholder = 'placeholder text';
+      const options = Arrange.createOptions(20);
+      const user = Arrange.setupUserEvent();
+      const result = await Arrange.setupFilterableMultiSelect({
+        placeholder,
+        options,
+        value: null,
+      });
+      const wrapperComponent = Arrange.getWrapperComponent(result);
+      result.fixture.autoDetectChanges();
+
+      // Open the panel
+      const trigger = result.getByText(placeholder);
+      await user.click(trigger);
+
+      // Type filter to show only options containing "1"
+      const filterInput = document.body.querySelector(
+        'input[placeholder="Search..."]',
+      ) as HTMLInputElement;
+      await user.type(filterInput, '1');
+      await result.fixture.whenStable();
+
+      // Press Ctrl+A while viewport is focused
+      const viewport = ElementQuery.cdkViewPort(result);
+      expect(viewport).toBeTruthy();
+      await user.type(viewport.nativeElement, '[ControlLeft>][KeyA]');
+      await result.fixture.whenStable();
+
+      // Should select only options containing "1" that are not disabled
+      const selectedValues = wrapperComponent.value as number[];
+      const expectedValues = [1, 11, 12, 13, 14, 16, 17, 18, 19];
+      expect(selectedValues.sort((a, b) => a - b)).toEqual(expectedValues);
+    });
+
+    test('should preserve selections when filter is cleared', async () => {
+      const placeholder = 'placeholder text';
+      const options = Arrange.createOptions(20);
+      const user = Arrange.setupUserEvent();
+      const result = await Arrange.setupFilterableMultiSelect({
+        placeholder,
+        options,
+        value: null,
+      });
+      const wrapperComponent = Arrange.getWrapperComponent(result);
+      result.fixture.autoDetectChanges();
+
+      // Open the panel
+      const trigger = result.getByText(placeholder);
+      await user.click(trigger);
+
+      // Type filter and select all filtered
+      const filterInput = document.body.querySelector(
+        'input[placeholder="Search..."]',
+      ) as HTMLInputElement;
+      await user.type(filterInput, '1');
+      await result.fixture.whenStable();
+
+      const selectAllCheckbox = document.body.querySelector(
+        '.ngx-virtual-select-field-select-all mat-pseudo-checkbox',
+      ) as HTMLElement;
+      await user.click(selectAllCheckbox);
+      await result.fixture.whenStable();
+
+      const selectedAfterFilter = [...(wrapperComponent.value as number[])];
+
+      // Clear the filter
+      await user.clear(filterInput);
+      await result.fixture.whenStable();
+
+      // Selections should be preserved
+      const selectedAfterClear = wrapperComponent.value as number[];
+      expect(selectedAfterClear.sort((a, b) => a - b)).toEqual(
+        selectedAfterFilter.sort((a, b) => a - b),
+      );
+    });
+
+    test('should show indeterminate state when some filtered options are selected', async () => {
+      const placeholder = 'placeholder text';
+      const options = Arrange.createOptions(20);
+      const user = Arrange.setupUserEvent();
+      // Pre-select only option 1 (which will be in filtered results)
+      const result = await Arrange.setupFilterableMultiSelect({
+        placeholder,
+        options,
+        value: [1],
+      });
+      result.fixture.autoDetectChanges();
+
+      // Open the panel
+      const trigger = result.getByText('1 Option');
+      await user.click(trigger);
+
+      // Type filter to show options containing "1"
+      const filterInput = document.body.querySelector(
+        'input[placeholder="Search..."]',
+      ) as HTMLInputElement;
+      await user.type(filterInput, '1');
+      await result.fixture.whenStable();
+
+      // Check that the checkbox is in indeterminate state (via CSS class)
+      const selectAllCheckbox = document.body.querySelector(
+        '.ngx-virtual-select-field-select-all mat-pseudo-checkbox',
+      ) as HTMLElement;
+      expect(selectAllCheckbox).toBeTruthy();
+      expect(selectAllCheckbox.classList.contains('mat-pseudo-checkbox-indeterminate')).toBe(true);
+      expect(selectAllCheckbox.classList.contains('mat-pseudo-checkbox-checked')).toBe(false);
+    });
+
+    test('should show checked state when all filtered options are selected', async () => {
+      const placeholder = 'placeholder text';
+      const options = Arrange.createOptions(20);
+      const user = Arrange.setupUserEvent();
+      // Pre-select all enabled options containing "1"
+      const allFilteredEnabled = [1, 11, 12, 13, 14, 16, 17, 18, 19];
+      const result = await Arrange.setupFilterableMultiSelect({
+        placeholder,
+        options,
+        value: allFilteredEnabled,
+      });
+      result.fixture.autoDetectChanges();
+
+      // Open the panel
+      const triggerText = allFilteredEnabled.map((v) => `${v} Option`).join(', ');
+      const trigger = result.getByText(triggerText);
+      await user.click(trigger);
+
+      // Type filter to show options containing "1"
+      const filterInput = document.body.querySelector(
+        'input[placeholder="Search..."]',
+      ) as HTMLInputElement;
+      await user.type(filterInput, '1');
+      await result.fixture.whenStable();
+
+      // Check that the checkbox is in checked state (via CSS class)
+      const selectAllCheckbox = document.body.querySelector(
+        '.ngx-virtual-select-field-select-all mat-pseudo-checkbox',
+      ) as HTMLElement;
+      expect(selectAllCheckbox).toBeTruthy();
+      expect(selectAllCheckbox.classList.contains('mat-pseudo-checkbox-checked')).toBe(true);
+      expect(selectAllCheckbox.classList.contains('mat-pseudo-checkbox-indeterminate')).toBe(false);
+    });
+
+    test('should show unchecked state when no filtered options are selected', async () => {
+      const placeholder = 'placeholder text';
+      const options = Arrange.createOptions(20);
+      const user = Arrange.setupUserEvent();
+      // Pre-select option 2 (not in filtered results for "1")
+      const result = await Arrange.setupFilterableMultiSelect({
+        placeholder,
+        options,
+        value: [2],
+      });
+      result.fixture.autoDetectChanges();
+
+      // Open the panel
+      const trigger = result.getByText('2 Option');
+      await user.click(trigger);
+
+      // Type filter to show options containing "1"
+      const filterInput = document.body.querySelector(
+        'input[placeholder="Search..."]',
+      ) as HTMLInputElement;
+      await user.type(filterInput, '1');
+      await result.fixture.whenStable();
+
+      // Check that the checkbox is in unchecked state (no checked or indeterminate class)
+      const selectAllCheckbox = document.body.querySelector(
+        '.ngx-virtual-select-field-select-all mat-pseudo-checkbox',
+      ) as HTMLElement;
+      expect(selectAllCheckbox).toBeTruthy();
+      expect(selectAllCheckbox.classList.contains('mat-pseudo-checkbox-checked')).toBe(false);
+      expect(selectAllCheckbox.classList.contains('mat-pseudo-checkbox-indeterminate')).toBe(false);
+    });
   });
 
   describe('as a control value accessor', () => {
