@@ -10,6 +10,7 @@ import {
   DestroyRef,
   ElementRef,
   Inject,
+  Injector,
   Input,
   OnDestroy,
   OnInit,
@@ -27,7 +28,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { ControlValueAccessor, NgControl } from '@angular/forms';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR, NgControl } from '@angular/forms';
 import { SelectionModel } from '@angular/cdk/collections';
 import { ListKeyManager } from '@angular/cdk/a11y';
 import {
@@ -117,6 +118,11 @@ import { MatPseudoCheckboxModule } from '@angular/material/core';
     {
       provide: MatFormFieldControl,
       useExisting: NgxVirtualSelectFieldComponent,
+    },
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: NgxVirtualSelectFieldComponent,
+      multi: true,
     },
     {
       provide: NGX_VIRTUAL_SELECT_FIELD_OPTION_PARENT,
@@ -274,11 +280,13 @@ export class NgxVirtualSelectFieldComponent<TValue>
 
     this._value = value;
 
-    this._selectionModel?.setSelection(
-      ...this._value.map(
-        (v) => this.optionFor.options$.value.find((o) => o.value === v)!,
-      ),
-    );
+    if (this.optionFor) {
+      this._selectionModel?.setSelection(
+        ...this._value.map(
+          (v) => this.optionFor.options$.value.find((o) => o.value === v)!,
+        ),
+      );
+    }
 
     // Update selection count signal for reactivity
     this.selectedCount.set(this._value.length);
@@ -370,9 +378,8 @@ export class NgxVirtualSelectFieldComponent<TValue>
 
   readonly id = `ngx-virtual-select-field-${NgxVirtualSelectFieldComponent.nextId++}`;
   readonly controlType = 'ngx-virtual-select-field';
-  readonly ngControl: NgControl | null = inject(NgControl, {
-    optional: true,
-  });
+  ngControl: NgControl | null = null;
+  private readonly _injector = inject(Injector);
   autofilled = false;
 
   protected readonly POSITIONS = POSITIONS;
@@ -452,11 +459,6 @@ export class NgxVirtualSelectFieldComponent<TValue>
     @Inject(NGX_VIRTUAL_SELECT_FIELD_CONFIG)
     private _defaultOptions?: NgxVirtualSelectFieldConfig,
   ) {
-    if (this.ngControl != null) {
-      this.ngControl.valueAccessor = this;
-      this._disabled = this.ngControl.disabled ?? false;
-    }
-
     this.overlayWidth = this.createOverlayWidthSignal();
 
     this.inheritedColorTheme = this._parentFormField
@@ -536,11 +538,18 @@ export class NgxVirtualSelectFieldComponent<TValue>
   protected get maxPageSize(): number {
     return Math.min(
       this.panelViewportPageSize,
-      this.optionFor.options$.value.length,
+      this.optionFor?.options$.value.length ?? 0,
     );
   }
 
   ngOnInit() {
+    // Resolve NgControl lazily via Injector to avoid NG0200 circular dependency
+    // with NG_VALUE_ACCESSOR provider. See: https://angular.dev/errors/NG0200
+    this.ngControl = this._injector.get(NgControl, null);
+    if (this.ngControl != null) {
+      this._disabled = this.ngControl.disabled ?? false;
+    }
+
     this._selectionModel = new SelectionModel<
       NgxVirtualSelectFieldOptionModel<TValue>
     >(this.multiple, [], true);
